@@ -3,7 +3,7 @@ Copyright (c) 2018 Chris Hughes. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chris Hughes
 -/
-import group_theory.mu2
+import group_theory.mu2 group_theory.order_of_element
 
 universes u v
 open equiv function finset fintype
@@ -136,7 +136,7 @@ begin
   rw mem_fin_pairs_lt at hab,
   by_cases h : g b < g a,
   { rw dif_pos h,
-    simp [not_le_of_gt hab]; congr },
+    simp [not_le_of_gt hab] },
   { rw [dif_neg h, inv_apply_self, inv_apply_self, if_pos (le_of_lt hab)],
     by_cases h₁ : f (g b) ≤ f (g a),
     { have : f (g b) ≠ f (g a),
@@ -299,5 +299,99 @@ have hsignl :  ∀ a ∈ l.map sign, a = (-1 : mu2) := λ a ha,
   let ⟨g, hg⟩ := list.mem_map.1 ha in hg.2 ▸ sign_eq_of_is_swap (hl₂ _ hg.1),
 by rw [← hl₁, is_group_hom.prod s, is_group_hom.prod (@sign α _ _),
   list.eq_repeat'.2 hsl, list.eq_repeat'.2 hsignl, list.length_map, list.length_map]
+
+instance [fintype α] : fintype (perm α) := sorry
+
+def disjoint (f g : perm α) := ∀ x : α, f x = x ∨ g x = x  
+
+def cycle_of_aux (f : perm α) : Π (n : ℕ) (y : α), list α
+| 0     y := []
+| (n+1) y := y :: (cycle_of_aux n (f y))
+
+#eval cycle_of_aux ⟨((+1) : fin 3 → fin 3), (+2), 
+  by unfold left_inverse; exact dec_trivial, 
+  λ x, by revert x; exact dec_trivial⟩ 3 1
+
+lemma length_cycle_of_aux (f : perm α) (n : ℕ) : ∀ y : α, (cycle_of_aux f n y).length = n :=
+by induction n; simp [cycle_of_aux, *]
+
+@[simp] lemma nth_cycle_of_aux [fintype α] (f : perm α) : ∀ {n m : ℕ} (y : α)
+  (hn : nat.succ m < (cycle_of_aux f n y).length),
+  list.nth_le (cycle_of_aux f n y) (nat.succ m) hn = 
+  f (list.nth_le (cycle_of_aux f n y) m (nat.lt_of_succ_lt hn))
+| 0     m     y hn := (nat.not_lt_zero _ hn).elim
+| 1     0     y hn := (lt_irrefl _ hn).elim
+| (n+2) 0     y hn := rfl
+| (n+1) (m+1) y hn := 
+  begin
+    unfold cycle_of_aux list.nth_le,
+    rw nth_cycle_of_aux,
+    refl,
+  end
+
+@[simp] lemma nth_cycle_of_aux_eq_pow [fintype α] (f : perm α) : ∀ {n m : ℕ} (x : α)
+  (hm : m < (cycle_of_aux f n x).length), (cycle_of_aux f n x).nth_le m hm = (f ^ m) x
+| 0     m     := λ _ hm, absurd hm dec_trivial
+| (n+1) 0     := λ _ _, rfl
+| (n+1) (m+1) := λ x hm,
+  by unfold cycle_of_aux list.nth_le; rw [nth_cycle_of_aux_eq_pow, pow_succ', mul_apply]
+
+lemma exists_pow_apply_eq_self [fintype α] (f : perm α) (x : α) : ∃ n, n ≠ 0 ∧ (f ^ n) x = x :=
+⟨order_of f, order_of_ne_zero _, by rw pow_order_of_eq_one; refl⟩
+
+def cycle_of_list [fintype α] (f : perm α) (x : α) : list α :=
+cycle_of_aux f (nat.find (exists_pow_apply_eq_self f x)) x
+
+lemma cycle_of_list_eq_cons [fintype α] (f : perm α) (x : α) : cycle_of_list f x = 
+  x :: cycle_of_aux f (nat.find (exists_pow_apply_eq_self f x) - 1) (f x) :=
+begin
+  unfold cycle_of_list,
+  cases h : (nat.find (exists_pow_apply_eq_self f x)),
+  { exact absurd h (nat.find_spec (exists_pow_apply_eq_self f x)).1 },
+  { simp [cycle_of_aux] }
+end
+
+def cycle_length [fintype α] (f : perm α) (x : α) : ℕ := (cycle_of_list f x).length
+
+lemma cycle_length_ne_zero [fintype α] (f : perm α) (x : α) : cycle_length f x ≠ 0 :=
+by rw [cycle_length, cycle_of_list, length_cycle_of_aux];
+  exact (nat.find_spec (exists_pow_apply_eq_self f x)).1
+
+@[simp] lemma pow_cycle_length_apply [fintype α] (f : perm α) (x : α) : (f ^ cycle_length f x) x = x :=
+by rw [cycle_length, cycle_of_list, length_cycle_of_aux];
+  exact (nat.find_spec (exists_pow_apply_eq_self f x)).2
+
+@[simp] lemma length_cycle_of_list [fintype α] (f : perm α) (x : α) :
+  (cycle_of_list f x).length = cycle_length f x := rfl
+
+@[simp] lemma nth_cycle_of_list_eq_pow [fintype α] (f : perm α) (x : α) {n : ℕ} (hn : n < cycle_length f x) :
+  (cycle_of_list f x).nth_le n hn = (f ^ n) x := nth_cycle_of_aux_eq_pow _ _ hn
+
+@[simp] lemma nil_diff (l : list α) : [].diff l = [] := by induction l; simp *
+
+lemma diff_sublist : ∀ l₁ l₂ : list α, l₁.diff l₂ <+ l₁
+| l₁ []      := by simp
+| l₁ (b::l₂) := by rw list.diff_cons;
+  exact list.sublist.trans (diff_sublist _ _) (list.erase_sublist _ _)
+
+def cycle_factors [fintype α] (f : perm α) : Π l : list α, list (list α)
+| []       := []
+| (x :: l) := let m := cycle_of_list f x in
+  have wf : ((x :: l : list α).diff (cycle_of_list f x)).length < (x :: l : list α).length :=
+  calc ((x :: l : list α).diff (cycle_of_list f x)).length =
+    list.length (list.diff l (cycle_of_aux f (nat.find _ - 1) (f x))) :
+    by rw [cycle_of_list_eq_cons, list.diff_cons, list.erase_cons_head]
+  ... ≤ l.length : list.length_le_of_sublist (diff_sublist _ _)
+   ... < (x :: l : list α).length : nat.lt_succ_self _,
+  if f x = x then cycle_factors ((x :: l : list α).diff m)
+  else m :: cycle_factors ((x :: l : list α).diff m)
+using_well_founded {dec_tac := tactic.assumption,
+  rel_tac := λ _ _ , `[exact ⟨_, measure_wf list.length⟩]}
+
+instance [fintype α] [has_repr α] [decidable_linear_order α] : has_repr (perm α) :=
+⟨λ f, repr (cycle_factors f ((@univ α _).sort (≤)))⟩
+
+#eval (⟨((*16) : fin 17 → fin 17), sorry, sorry, sorry⟩ : perm (fin 17))
+
 
 end equiv.perm
