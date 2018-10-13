@@ -34,6 +34,9 @@ not_congr coe_nat_eq_zero
 
 lemma coe_nat_nonneg (n : ℕ) : 0 ≤ (n : ℤ) := coe_nat_le.2 (nat.zero_le _)
 
+@[simp] lemma abs_of_nat (n : ℕ) : abs (n : ℤ) = n :=
+abs_of_nonneg (coe_nat_nonneg _)
+
 lemma coe_nat_ne_zero_iff_pos {n : ℕ} : (n : ℤ) ≠ 0 ↔ 0 < n :=
 ⟨λ h, nat.pos_of_ne_zero (coe_nat_ne_zero.1 h),
 λ h, (ne_of_lt (coe_nat_lt.2 h)).symm⟩

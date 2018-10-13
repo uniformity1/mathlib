@@ -68,6 +68,9 @@ by simpa [-cast_le] using not_congr (@cast_le α _ n m)
 @[simp] theorem cast_pos [linear_ordered_ring α] {n : ℕ} : (0 : α) < n ↔ 0 < n :=
 by rw [← cast_zero, cast_lt]
 
+@[simp] theorem abs_cast [decidable_linear_ordered_comm_ring α] (n : ℕ) : abs (n : α) = n :=
+abs_of_nonneg (nat.cast_nonneg n)
+
 theorem eq_cast [add_monoid α] [has_one α] (f : ℕ → α)
   (H0 : f 0 = 0) (H1 : f 1 = 1)
   (Hadd : ∀ x y, f (x + y) = f x + f y) : ∀ n : ℕ, f n = n

@@ -264,6 +264,18 @@ theorem gpow_add (a : α) : ∀ (i j : ℤ), a ^ (i + j) = a ^ i * a ^ j
 theorem add_gsmul : ∀ (a : β) (i j : ℤ), (i + j) • a = i • a + j • a :=
 @gpow_add (multiplicative β) _
 
+lemma gpow_add_one (a : α) (i : ℤ) : a ^ (i + 1) = a ^ i * a :=
+by simp [gpow_add]
+lemma add_one_gsmul (a : β) (i : ℤ) : (i + 1) • a = i • a + a :=
+@gpow_add_one (multiplicative β) _ _ _
+attribute [to_additive add_one_gsmul] gpow_add_one
+
+lemma gpow_one_add (a : α) (i : ℤ) : a ^ (1 + i) = a * a ^ i :=
+by simp [gpow_add, -add_comm]
+lemma one_add_gsmul (a : β) (i : ℤ) : (1 + i) • a = a + i • a :=
+@gpow_one_add (multiplicative β) _ _ _
+attribute [to_additive one_add_gsmul] gpow_one_add
+
 theorem gpow_mul_comm (a : α) (i j : ℤ) : a ^ i * a ^ j = a ^ j * a ^ i :=
 by rw [← gpow_add, ← gpow_add, add_comm]
 theorem gsmul_add_comm : ∀ (a : β) (i j), i • a + j • a = j • a + i • a :=
