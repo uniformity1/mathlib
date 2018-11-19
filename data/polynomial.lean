@@ -81,6 +81,7 @@ lemma single_eq_C_mul_X : ∀{n}, single n a = C a * X^n
 lemma sum_C_mul_X_eq (p : polynomial α) : p.sum (λn a, C a * X^n) = p :=
 eq.trans (sum_congr rfl $ assume n hn, single_eq_C_mul_X.symm) (finsupp.sum_single _)
 
+
 @[elab_as_eliminator] protected lemma induction_on {M : polynomial α → Prop} (p : polynomial α)
   (h_C : ∀a, M (C a))
   (h_add : ∀p q, M p → M q → M (p + q))
@@ -312,6 +313,12 @@ lemma root_mul_right_of_is_root {p : polynomial α} (q : polynomial α) :
   is_root p a → is_root (p * q) a :=
 λ H, by rw [is_root, eval_mul, is_root.def.1 H, zero_mul]
 
+lemma coeff_zero_eq_eval_zero (p : polynomial α) :
+  coeff p 0 = p.eval 0 :=
+calc coeff p 0 = coeff p 0 * 0 ^ 0 : by simp
+... = p.eval 0 : eq.symm $
+  finset.sum_eq_single _ (λ b _ hb, by simp [zero_pow (nat.pos_of_ne_zero hb)]) (by simp)
+
 end eval
 
 section comp
@@ -423,6 +430,12 @@ let ⟨n, hn⟩ :=
   classical.not_forall.1 (mt option.eq_none_iff_forall_not_mem.2 (mt degree_eq_bot.1 hp)) in
 have hn : degree p = some n := not_not.1 hn,
 by rw [nat_degree, hn]; refl
+
+lemma nat_degree_eq_of_degree_eq_some {p : polynomial α} {n : ℕ}
+  (h : degree p = n) : nat_degree p = n :=
+have hp0 : p ≠ 0, from λ hp0, by rw hp0 at h; exact option.no_confusion h,
+option.some_inj.1 $ show (nat_degree p : with_bot ℕ) = n,
+  by rwa [← degree_eq_nat_degree hp0]
 
 @[simp] lemma degree_le_nat_degree : degree p ≤ nat_degree p :=
 begin
@@ -577,6 +590,8 @@ leading_coeff_monomial a 0
 suffices leading_coeff (C (1:α) * X^1) = 1, by rwa [C_1, pow_one, one_mul] at this,
 leading_coeff_monomial 1 1
 
+@[simp] lemma monic_X : monic (X : polynomial α) := leading_coeff_X
+
 @[simp] lemma leading_coeff_one : leading_coeff (1 : polynomial α) = 1 :=
 suffices leading_coeff (C (1:α) * X^0) = 1, by rwa [C_1, pow_zero, mul_one] at this,
 leading_coeff_monomial 1 0
@@ -673,6 +688,23 @@ have h : leading_coeff (X : polynomial α) * leading_coeff (X ^ n) ≠ 0,
   by rw [leading_coeff_X, leading_coeff_X_pow n, one_mul];
     exact h10,
 by rw [pow_succ, leading_coeff_mul' h, leading_coeff_X, leading_coeff_X_pow, one_mul]
+
+lemma range_sum_C_mul_X_eq (p : polynomial α) :
+  (range (nat_degree p).succ).sum (λ n, C (coeff p n) * X ^ n) = p :=
+calc (range (nat_degree p).succ).sum (λ n, C (coeff p n) * X ^ n)
+    = p.sum (λ n a, C a * X ^ n) : eq.symm $ finset.sum_subset
+        (λ n hn, mem_range.2 (nat.lt_succ_of_le (le_nat_degree_of_ne_zero
+          (finsupp.mem_support_iff.1 hn))))
+        (by simp {contextual := tt})
+... = p : sum_C_mul_X_eq p
+
+lemma degree_eq_one {p : polynomial α} (h : degree p = 1) :
+  p = C (leading_coeff p) * X + C (coeff p 0) :=
+calc p = (range (nat_degree p).succ).sum (λ n, C (coeff p n) * X ^ n) :
+  eq.symm $ range_sum_C_mul_X_eq p
+... = C (leading_coeff p) * X + C (coeff p 0) :
+  have nat_degree p = 1, from nat_degree_eq_of_degree_eq_some h,
+  by simp [*, leading_coeff]
 
 end comm_semiring
 
@@ -1062,6 +1094,9 @@ lemma dvd_iff_is_root : (X - C a) ∣ p ↔ is_root p a :=
 ⟨λ h, by rwa [← dvd_iff_mod_by_monic_eq_zero (monic_X_sub_C _),
     mod_by_monic_X_sub_C_eq_C_eval, ← C_0, C_inj] at h,
   λ h, ⟨(p /ₘ (X - C a)), by rw mul_div_by_monic_eq_iff_is_root.2 h⟩⟩
+
+lemma mod_by_monic_X (p : polynomial α) : p %ₘ X = C (p.eval 0) :=
+by rw [← mod_by_monic_X_sub_C_eq_C_eval, C_0, sub_zero]
 
 end nonzero_comm_ring
 
