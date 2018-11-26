@@ -102,6 +102,10 @@ meta def mfoldl {α : Type} {m} [monad m] (f : α → expr → m α) : α → ex
 | x e := prod.snd <$> (state_t.run (e.traverse $ λ e',
     (get >>= monad_lift ∘ flip f e' >>= put) $> e') x : m _)
 
+meta def is_mvar : expr → bool
+| (mvar _ _ _) := tt
+| _            := ff
+
 end expr
 
 namespace environment
@@ -553,6 +557,7 @@ meta def note_anon (e : expr) : tactic unit :=
 do n ← get_unused_name "lh",
    note n none e, skip
 
+/-- `find_local t` returns a local constant with type t, or fails if none exists. -/
 meta def find_local (t : pexpr) : tactic expr :=
 do t' ← to_expr t,
    prod.snd <$> solve_aux t' assumption

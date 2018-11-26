@@ -704,23 +704,6 @@ have h : leading_coeff (X : polynomial α) * leading_coeff (X ^ n) ≠ 0,
     exact h10,
 by rw [pow_succ, leading_coeff_mul' h, leading_coeff_X, leading_coeff_X_pow, one_mul]
 
-lemma range_sum_C_mul_X_eq (p : polynomial α) :
-  (range (nat_degree p).succ).sum (λ n, C (coeff p n) * X ^ n) = p :=
-calc (range (nat_degree p).succ).sum (λ n, C (coeff p n) * X ^ n)
-    = p.sum (λ n a, C a * X ^ n) : eq.symm $ finset.sum_subset
-        (λ n hn, mem_range.2 (nat.lt_succ_of_le (le_nat_degree_of_ne_zero
-          (finsupp.mem_support_iff.1 hn))))
-        (by simp {contextual := tt})
-... = p : sum_C_mul_X_eq p
-
-lemma degree_eq_one {p : polynomial α} (h : degree p = 1) :
-  p = C (leading_coeff p) * X + C (coeff p 0) :=
-calc p = (range (nat_degree p).succ).sum (λ n, C (coeff p n) * X ^ n) :
-  eq.symm $ range_sum_C_mul_X_eq p
-... = C (leading_coeff p) * X + C (coeff p 0) :
-  have nat_degree p = 1, from nat_degree_eq_of_degree_eq_some h,
-  by simp [*, leading_coeff]
-
 lemma nat_degree_comp_le : nat_degree (p.comp q) ≤ nat_degree p * nat_degree q :=
 if h0 : p.comp q = 0 then by rw [h0, nat_degree_zero]; exact nat.zero_le _
 else with_bot.coe_le_coe.1 $

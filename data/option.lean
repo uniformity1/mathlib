@@ -28,7 +28,7 @@ theorem some_inj {a b : α} : some a = some b ↔ a = b := by simp
 theorem injective_some (α : Type*) : function.injective (@some α) :=
 λ _ _, some_inj.mp
 
-theorem ext : ∀ {o₁ o₂ : option α}, (∀ a, a ∈ o₁ ↔ a ∈ o₂) → o₁ = o₂
+@[extensionality] theorem ext : ∀ {o₁ o₂ : option α}, (∀ a, a ∈ o₁ ↔ a ∈ o₂) → o₁ = o₂
 | none     none     H := rfl
 | (some a) o        H := ((H _).1 rfl).symm
 | o        (some b) H := (H _).2 rfl
@@ -101,7 +101,10 @@ by cases x; simp [is_some]; exact ⟨_, rfl⟩
 
 @[simp] theorem is_none_some {a : α} : is_none (some a) = ff := rfl
 
-theorem is_none_iff_eq_none {o : option α} : o.is_none ↔ o = none :=
+@[simp] theorem not_is_some {a : option α} : is_some a = ff ↔ a.is_none = tt :=
+by cases a; simp
+
+theorem is_none_iff_eq_none {o : option α} : o.is_none = tt ↔ o = none :=
 ⟨option.eq_none_of_is_none, λ e, e.symm ▸ rfl⟩
 
 instance decidable_eq_none {o : option α} : decidable (o = none) :=
@@ -116,6 +119,11 @@ instance decidable_exists_mem {p : α → Prop} [decidable_pred p] :
   ∀ o : option α, decidable (∃ a ∈ o, p a)
 | none     := is_false (by simp)
 | (some a) := decidable_of_iff (p a) (by simp)
+
+lemma some_get : ∀ {a : option α} (ha : option.is_some a),
+  option.some (option.get ha) = a
+| none ha     := absurd ha dec_trivial
+| (some a) ha := rfl
 
 /-- inhabited `get` function. Returns `a` if the input is `some a`,
   otherwise returns `default`. -/

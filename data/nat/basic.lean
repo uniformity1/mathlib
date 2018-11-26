@@ -12,6 +12,9 @@ universes u v
 namespace nat
 variables {m n k : ℕ}
 
+attribute [simp] nat.add_sub_cancel nat.add_sub_cancel_left
+attribute [simp] nat.sub_self
+
 theorem succ_inj' {n m : ℕ} : succ n = succ m ↔ n = m :=
 ⟨succ_inj, congr_arg _⟩
 
@@ -35,6 +38,11 @@ theorem pos_iff_ne_zero : n > 0 ↔ n ≠ 0 :=
 ⟨ne_of_gt, nat.pos_of_ne_zero⟩
 
 theorem pos_iff_ne_zero' : 0 < n ↔ n ≠ 0 := pos_iff_ne_zero
+
+lemma one_lt_iff_ne_zero_and_ne_one : ∀ {n : ℕ}, 1 < n ↔ n ≠ 0 ∧ n ≠ 1
+| 0     := dec_trivial
+| 1     := dec_trivial
+| (n+2) := dec_trivial
 
 theorem eq_of_lt_succ_of_not_lt {a b : ℕ} (h1 : a < b + 1) (h2 : ¬ a < b) : a = b :=
 have h3 : a ≤ b, from le_of_lt_succ h1,
@@ -316,7 +324,7 @@ by rw [mul_comm c, mod_mul_right_div_self]
 protected theorem dvd_add_left {k m n : ℕ} (h : k ∣ n) : k ∣ m + n ↔ k ∣ m :=
 (nat.dvd_add_iff_left h).symm
 
-protected theorem dvd_add_right {k m n : ℕ} (h : k ∣ m) : k ∣ m + n ↔ k ∣ n := 
+protected theorem dvd_add_right {k m n : ℕ} (h : k ∣ m) : k ∣ m + n ↔ k ∣ n :=
 (nat.dvd_add_iff_right h).symm
 
 protected theorem mul_dvd_mul_iff_left {a b c : ℕ} (ha : a > 0) : a * b ∣ a * c ↔ b ∣ c :=
@@ -831,6 +839,7 @@ lemma exists_eq_add_of_lt : ∀ {m n : ℕ}, m < n → ∃ k : ℕ, n = m + k + 
 | 0 0 h := false.elim $ lt_irrefl _ h
 | 0 (n+1) h := ⟨n, by simp⟩
 | (m+1) (n+1) h := let ⟨k, hk⟩ := exists_eq_add_of_le (nat.le_of_succ_le_succ h) in ⟨k, by simp [hk]⟩
+
 
 
 end nat
