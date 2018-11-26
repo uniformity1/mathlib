@@ -493,6 +493,22 @@ theorem pow_nonneg {a : α} (H : 0 ≤ a) : ∀ (n : ℕ), 0 ≤ a ^ n
 | 0     := zero_le_one
 | (n+1) := mul_nonneg H (pow_nonneg _)
 
+theorem pow_lt {x y : α} {n : ℕ} (Hxy : x < y) (Hxpos : 0 < x) (Hnpos : 0 < n) : x ^ n < y ^ n :=
+begin
+  rw ←nat.sub_add_cancel Hnpos,
+  induction (n - 1), { simpa only [pow_one] },
+  rw [pow_add, pow_add, nat.succ_eq_add_one, pow_one, pow_one],
+  apply mul_lt_mul ih (le_of_lt Hxy) Hxpos (le_of_lt (pow_pos (lt_trans Hxpos Hxy) _))
+end
+
+theorem pow_eq {x y : α} {n : ℕ} (Hxpos : 0 < x) (Hypos : 0 < y) (Hnpos : 0 < n) (Hxyn : x ^ n = y ^ n) : x = y :=
+begin
+  rcases lt_trichotomy x y with hxy | rfl | hyx,
+  { exact absurd Hxyn (ne_of_lt (pow_lt hxy Hxpos Hnpos)) },
+  { refl },
+  { exact absurd Hxyn (ne_of_gt (pow_lt hyx Hypos Hnpos)) },
+end
+
 theorem one_le_pow_of_one_le {a : α} (H : 1 ≤ a) : ∀ (n : ℕ), 1 ≤ a ^ n
 | 0     := le_refl _
 | (n+1) := by simpa only [mul_one] using mul_le_mul H (one_le_pow_of_one_le n)
