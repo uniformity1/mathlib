@@ -1158,6 +1158,12 @@ instance : integral_domain (polynomial α) :=
   end,
   ..polynomial.nonzero_comm_ring }
 
+lemma nat_degree_mul_eq (hp : p ≠ 0) (hq : q ≠ 0) : nat_degree (p * q) =
+  nat_degree p + nat_degree q :=
+by rw [← with_bot.coe_eq_coe, ← degree_eq_nat_degree (mul_ne_zero hp hq),
+    with_bot.coe_add, ← degree_eq_nat_degree hp,
+    ← degree_eq_nat_degree hq, degree_mul_eq]
+
 @[simp] lemma nat_degree_pow_eq (p : polynomial α) (n : ℕ) :
   nat_degree (p ^ n) = n * nat_degree p :=
 if hp0 : p = 0
