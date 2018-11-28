@@ -336,6 +336,11 @@ end
 
 instance has_one [has_one α] : has_one (with_bot α) := ⟨(1 : α)⟩
 
+lemma add_one_le_of_lt : ∀ {n m : with_bot ℕ}, n < m → n + 1 ≤ m
+| n       none    h := absurd h (not_lt_of_ge bot_le)
+| (n : ℕ) (m : ℕ) h := with_bot.coe_le_coe.2 (with_bot.coe_lt_coe.1 h)
+| none    (m : ℕ) h := bot_le
+
 end with_bot
 
 section canonically_ordered_monoid

@@ -1051,6 +1051,9 @@ lemma subtype_val_range {p : α → Prop} :
   range (@subtype.val _ p) = {x | p x} :=
 by rw ← image_univ; simp [-image_univ, subtype_val_image]
 
+@[simp] lemma range_const [hn : nonempty α] (b : β) : range (λ a : α, b) = {b} :=
+set.ext $ λ a, ⟨λ ⟨c, hc⟩, by simp [hc.symm], λ h, ⟨classical.choice hn, by simp * at *⟩⟩
+
 end range
 
 /-- The set `s` is pairwise `r` if `r x y` for all *distinct* `x y ∈ s`. -/

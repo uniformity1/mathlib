@@ -101,6 +101,16 @@ by simpa only [zero_mul] using mul_div_cancel 0 a0
 @[simp] lemma div_self {a : α} (a0 : a ≠ 0) : a / a = 1 :=
 by simpa only [one_mul] using mul_div_cancel 1 a0
 
+lemma dvd_iff_mod_eq_zero {a b : α} : b ∣ a ↔ a % b = 0 :=
+(classical.em (b = 0)).elim
+  (λ hb, by simp [hb])
+  (λ hb, ⟨λ ⟨c, hc⟩, (add_left_inj (b *(a / b))).1 $
+      by rw [div_add_mod, hc, mul_div_cancel_left _ hb, add_zero],
+    λ h, ⟨a / b, eq.symm $ by simpa [*] using div_add_mod a b⟩⟩)
+
+instance decidable_dvd [decidable_eq α] : @decidable_rel α (∣) :=
+assume a n, decidable_of_iff _ dvd_iff_mod_eq_zero.symm
+
 section gcd
 variable [decidable_eq α]
 
@@ -214,9 +224,9 @@ instance (α : Type*) [e : euclidean_domain α] : integral_domain α :=
 by haveI := classical.dec_eq α; exact
 { eq_zero_or_eq_zero_of_mul_eq_zero :=
     λ a b (h : a * b = 0), or_iff_not_and_not.2 $ λ h0 : a ≠ 0 ∧ b ≠ 0,
-      h0.1 $ by rw [← mul_div_cancel a h0.2, h, zero_div h0.2], 
+      h0.1 $ by rw [← mul_div_cancel a h0.2, h, zero_div h0.2],
   ..e }
-  
+
 end gcd
 
 instance : euclidean_domain ℤ :=

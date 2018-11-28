@@ -548,6 +548,12 @@ le_cInf (by simp) (by rwa forall_range_iff)
 lemma cinfi_le [ne : nonempty β] {f : β → α} (H : bdd_below (range f)) {c : β} : infi f ≤ f c :=
 cInf_le H (mem_range_self _)
 
+@[simp] lemma cinfi_const [nonempty β] (a : α) : infi (λ b : β, a) = a :=
+by rw [infi, range_const, cInf_singleton]
+
+@[simp] lemma csupr_const [nonempty β] (a : α) : supr (λ b : β, a) = a :=
+by rw [supr, range_const, cSup_singleton]
+
 lemma is_lub_cSup {s : set α} (ne : s ≠ ∅) (H : bdd_above s) : is_lub s (Sup s) :=
 ⟨assume x, le_cSup H, assume x, cSup_le ne⟩
 

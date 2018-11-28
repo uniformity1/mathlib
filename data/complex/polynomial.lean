@@ -67,12 +67,12 @@ open complex polynomial finset
 --       (by rw degree_X; exact dec_trivial),
 --   have hp : 1 < degree p, from match degree p, hp, h with
 --     | none    := dec_trivial
---     | (some n) := λ h0 h1, lt_of_le_of_ne (with_bot.coe_le_coe.2 (with_bot.coe_lt_coe.1 h0)) (ne.symm h1)
+--     | (some n) := λ h0 h1, lt_of_le_of_ne ( .coe_le_coe.2 ( .coe_lt_coe.1 h0)) (ne.symm h1)
 --     end,
 --   have hXp : degree X ≤ degree p, from le_of_lt (by rw @degree_X ℂ; exact hp),
 --   let ⟨r, hr⟩ := @polynomial_tendsto_infinity (p /ₘ X)
---     (@lt_of_add_lt_add_left' _ _ (1 : with_bot ℕ) _ _
---       (calc (1 : with_bot ℕ) + 0 < degree p : hp
+--     (@lt_of_add_lt_add_left' _ _ (1 :   ℕ) _ _
+--       (calc (1 :   ℕ) + 0 < degree p : hp
 --         ... = 1 + degree (p /ₘ X) : by rw [← @degree_X ℂ, degree_add_div_by_monic monic_X hXp]))
 --   (x + (p.eval 0).abs) in
 --   ⟨max 1 (r + (p.eval 0).abs), λ z hz,
@@ -106,42 +106,71 @@ open complex polynomial finset
 --     h_C 0)
 --   (assume n a p _ _ hp, suffices M (C a * X^n + p), by rwa [single_eq_C_mul_X],
 --     h_add _ _ this hp)
+#print finsupp.induction
 
-inductive nonconstant : polynomial ℂ → Prop
-| X   : ∀ {a}, a ≠ 0 → nonconstant (C a * X)
-| mul : ∀ {p}, nonconstant p → nonconstant (p * X)
-| add : ∀ {p} (a), nonconstant p → nonconstant (p + C a)
+lemma zero_le_degree_iff {α : Type*} [comm_semiring α]
+  [decidable_eq α] {p : polynomial α} :
+  0 ≤ degree p ↔ p ≠ 0 :=
+by rw [ne.def, ← degree_eq_bot];
+  cases degree p; exact dec_trivial
 
-lemma nonconstant_of_degree_pos : ∀ {p : polynomial ℂ},
-  0 < degree p → nonconstant p
-| p := λ h,
+lemma X_ne_zero {α : Type*} [nonzero_comm_ring α]
+  [decidable_eq α] : (X : polynomial α) ≠ 0 :=
+mt (congr_arg (λ p, coeff p 1)) (by simp)
+
+@[elab_as_eliminator] lemma induction_on' {α : Type*}
+  [nonzero_comm_ring α] [decidable_eq α]
+  {P : polynomial α → Prop} : Π (p : polynomial α),
+  P 0 →
+  (Π {p}, P p → P (p * X)) →
+  (Π {p} {a}, P p → P (p + C a)) →
+  P p
+| p := λ h0 hX hC,
+if hp : p = 0 then hp.symm ▸ h0
+else
 have wf : degree (p /ₘ X) < degree p,
-  from degree_div_by_monic_lt _ monic_X
-  (λ hp0, by simp [hp0, lt_irrefl, *] at *)
-  (by rw degree_X; exact dec_trivial),
-by rw [← mod_by_monic_add_div p monic_X,
-  add_comm, mod_by_monic_X, mul_comm] at *;
-exact nonconstant.add _
-  (if hpX : 0 < degree (p /ₘ X)
-    then nonconstant.mul (nonconstant_of_degree_pos hpX)
-    else by rw [eq_C_of_degree_le_zero (not_lt.1 hpX)] at *;
-      exact if hc : coeff (p /ₘ X) 0 = 0
-        then by simpa [hc, not_lt_of_ge degree_C_le] using h
-        else nonconstant.X hc)
+  from degree_div_by_monic_lt _ monic_X hp (by rw degree_X; exact dec_trivial),
+by rw [← mod_by_monic_add_div p monic_X, mod_by_monic_X,
+  add_comm, mul_comm] at *; exact
+  hC (hX (induction_on' _ h0 @hX @hC))
 using_well_founded {dec_tac := tactic.assumption}
 
+@[elab_as_eliminator] lemma degree_pos_induction_on
+  {α : Type*} [nonzero_comm_ring α] [decidable_eq α]
+  {P : polynomial α → Prop} (p : polynomial α) (h0 : 0 < degree p)
+  (hC : ∀ {a}, a ≠ 0 → P (C a * X))
+  (hX : ∀ {p}, 0 < degree p → P p → P (p * X))
+  (hadd : ∀ {p} {a}, 0 < degree p → P p → P (p + C a)) : P p :=
+induction_on' p
+  (λ h, by rw degree_zero at h; exact absurd h dec_trivial)
+  (λ p ih h0',
+    if h0 : 0 < degree p
+    then hX h0 (ih h0)
+    else by rw [eq_C_of_degree_le_zero (le_of_not_gt h0)] at *;
+      exact hC (λ h : coeff p 0 = 0,
+        by simpa [h, not_lt.2 (@lattice.bot_le (  ℕ) _ _)] using h0'))
+  (λ p a ih h0,
+    have 0 < degree p,
+      from calc 0 < degree (p + C a) : h0
+        ... = degree (C (-a) + (p + C a)) :
+          eq.symm $ degree_add_eq_of_degree_lt $
+            lt_of_le_of_lt degree_C_le h0
+        ... = _ : by simp [is_ring_hom.map_neg (@C α _ _)],
+    hadd this (ih this))
+  h0
+
 lemma polynomial_tendsto_infinity' {p : polynomial ℂ} (h : 0 < degree p) :
-  ∀ x : ℝ, ∃ r : ℝ, ∀ z : ℂ, r < z.abs → x < (p.eval z).abs :=
-nonconstant.rec_on (nonconstant_of_degree_pos h)
-  (λ a ha x, ⟨x / a.abs, λ z hz,
-    by simpa [(div_lt_iff' (complex.abs_pos.2 ha)).symm]⟩)
-  (λ p hp ih x, let ⟨r, hr⟩ := ih x in
-    ⟨max r 1, λ z hz, by rw [eval_mul, eval_X, complex.abs_mul];
+  ∀ x : ℝ, ∃ r > 0, ∀ z : ℂ, r < z.abs → x < (p.eval z).abs :=
+degree_pos_induction_on p h
+  (λ a ha x, ⟨max (x / a.abs) 1, (lt_max_iff.2 (or.inr zero_lt_one)), λ z hz,
+    by simp [(div_lt_iff' (complex.abs_pos.2 ha)).symm, max_lt_iff, *] at *⟩)
+  (λ p hp ih x, let ⟨r, hr0, hr⟩ := ih x in
+    ⟨max r 1, lt_max_iff.2 (or.inr zero_lt_one), λ z hz, by rw [eval_mul, eval_X, complex.abs_mul];
         exact lt_of_lt_of_le (hr z (lt_of_le_of_lt (le_max_left _ _) hz))
           (le_mul_of_ge_one_right (complex.abs_nonneg _)
             (le_trans (le_max_right _ _) (le_of_lt hz)))⟩)
-  (λ p a hp ih x, let ⟨r, hr⟩ := ih (x + a.abs) in
-    ⟨r, λ z hz, by rw [eval_add, eval_C, ← sub_neg_eq_add];
+  (λ p a hp ih x, let ⟨r, hr0, hr⟩ := ih (x + a.abs) in
+    ⟨r, hr0, λ z hz, by rw [eval_add, eval_C, ← sub_neg_eq_add];
       exact lt_of_lt_of_le (lt_sub_iff_add_lt.2
         (by rw complex.abs_neg; exact (hr z hz)))
         (le_trans (le_abs_self _) (complex.abs_abs_sub_le_abs_sub _ _))⟩)
@@ -165,9 +194,9 @@ lemma polynomial.is_unit_iff {p : polynomial ℂ} : is_unit p ↔ degree p = 0 :
       rw [← C_mul, _root_.mul_inv_cancel hc, C_1]
     end⟩⟩
 
-instance decidable_dvd {α : Type*} [comm_ring α] [decidable_eq α] :
-  decidable_rel ((∣) : polynomial α → polynomial α → Prop) :=
-sorry
+noncomputable instance decidable_dvd {α : Type*} [comm_semiring α] [decidable_eq α] :
+  decidable_rel (@has_dvd.dvd (polynomial α) _) :=
+classical.dec_rel _
 
 lemma polynomial.finite_of_degree_pos {α : Type*} [integral_domain α] [decidable_eq α]
   {p q : polynomial α} (hp : (0 : with_bot ℕ) < degree p) (hq : q ≠ 0) :
@@ -187,7 +216,8 @@ lemma polynomial.finite_of_degree_pos {α : Type*} [integral_domain α] [decidab
       (add_pos_of_pos_of_nonneg (by rwa one_mul) (nat.zero_le _))) this
   end⟩
 
-def polynomial.multiplicity {α : Type*} [integral_domain α] [decidable_eq α]
+
+noncomputable def polynomial.multiplicity {α : Type*} [integral_domain α] [decidable_eq α]
   (p : polynomial α) (a :  α) : ℕ :=
 if h0 : p = 0 then 0 else
 (prime_count (X - C a) p).get (polynomial.finite_of_degree_pos
@@ -233,9 +263,60 @@ end
 
 @[simp] lemma div_by_monic_one (p : polynomial ℂ) : p /ₘ 1 = p :=
 by conv_rhs { rw [← mod_by_monic_add_div p monic_one] }; simp
+--set_option pp.notation false
+instance : proper_space ℂ :=
+⟨λ x y f hf h, begin
+  unfold filter.principal at h,
+  unfold lattice.has_inf.inf,
+end⟩
 
-axiom attains_infi (p : polynomial ℂ) :
-  ∃ x, (p.eval x).abs = ⨅ y, (p.eval y).abs
+#print closed_of_compact
+#print mem_of_is_glb_of_is_closed
+#print lattice.infi_lt_iff
+#print compact_of_closed
+#print closed_ball
+#print lattice.le_Inf_iff
+#print is_glb
+-- #print cinf_union
+
+/--- NT=OT Trueeeee change attains infi-/
+example {s t : set ℝ} (hst : s ⊆ t) (hs : ∃ x, x ∈ s) (hb : bdd_below s)
+  (ht : ∀ x ∈ t, x ∉ s → lattice.Inf t + 1 < x) :
+  is_glb s (lattice.Inf t) :=
+_
+
+local attribute [instance, priority 0] classical.prop_decidable
+
+lemma classical.not_imp {p q : Prop} : ¬ (p → q) ↔ p ∧ ¬ q := not_imp
+
+lemma attains_infi (p : polynomial ℂ) :
+  ∃ x, (p.eval x).abs = ⨅ y, (p.eval y).abs :=
+if hp0 : 0 < degree p then
+have hb : bdd_below (set.range (λ x, (p.eval x).abs)),
+  from ⟨0, λ _ ⟨y, hy⟩, (hy : _ = _) ▸ complex.abs_nonneg _⟩,
+let ⟨r, hr0, hr⟩ := polynomial_tendsto_infinity' hp0 ((⨅ y, (p.eval y).abs) + 1) in
+have (⨅ y, (p.eval y).abs) ∈ (λ x, (p.eval x).abs) '' closed_ball 0 r,
+  from mem_of_is_glb_of_is_closed
+    ⟨λ x ⟨z, hz₁, hz₂⟩, hz₂ ▸ lattice.cinfi_le ⟨0, λ _ ⟨y, hy⟩, (hy : _ = _) ▸ complex.abs_nonneg _⟩,
+      λ x hx, lattice.le_cinfi (λ y,
+        if hy : y ∈ closed_ball (0 : ℂ) r
+        then hx _ ⟨y, hy, rfl⟩
+        else have hry : r < y.abs, by simpa [closed_ball, complex.dist_eq] using hy,
+          let ⟨z, ⟨g, hg⟩, hz⟩ := lattice.exists_lt_of_cInf_lt
+            (show set.range (λ y, (p.eval y).abs) ≠ ∅,
+              from set.ne_empty_iff_exists_mem.2 ⟨(p.eval 0).abs, ⟨0, rfl⟩⟩)
+            (lt_add_one (⨅ y, (p.eval y).abs)) in
+          calc x ≤ z : hx _ ⟨g, classical.by_contradiction $ λ hg0,
+              have hrg : r < g.abs, by simpa [closed_ball, complex.dist_eq] using hg0,
+              not_le_of_gt hz (hg ▸ (le_of_lt (hr _ hrg))),
+            hg⟩
+          ... ≤ _ : le_of_lt hz
+          ... ≤ _ : le_of_lt (hr _ hry))⟩
+    (set.ne_empty_iff_exists_mem.2 ⟨(p.eval 0).abs, ⟨0, by simp [le_of_lt hr0], rfl⟩⟩)
+  (closed_of_compact _ (compact_image _
+    ((polynomial.continuous_eval _).comp complex.continuous_abs))),
+let ⟨g, hg⟩ := this in
+⟨g, hg.2⟩
 
 axiom nth_root (n : ℕ) (z : ℂ) : ℂ
 
