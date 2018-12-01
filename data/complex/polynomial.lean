@@ -1,138 +1,31 @@
-import analysis.exponential analysis.polynomial
-import ring_theory.prime_count
-
+import analysis.exponential analysis.polynomial ring_theory.multiplicity
+import ring_theory.principal_ideal_domain
 open complex polynomial finset
 
--- inductive lep (p : polynomial ℂ) : polynomial ℂ → Prop
--- | C_mul   : ∀ {a}, a ≠ 0 → lep (C a * p)
--- | mul     : ∀ {q}, lep q → lep (q * X)
--- | add     : ∀ {q} {a}, lep q → q ≠ -C a → lep (q + C a)
+set_option eqn_compiler.zeta true
 
--- inductive ltp (p : polynomial ℂ) : polynomial ℂ → Prop
--- | mul_X : p ≠ 0 → ltp (p * X)
--- | mul_C : ∀ {a q}, a ≠ 0 → ltp q → ltp (C a * q)
--- | add   : ∀ {q} {a}, ltp q → q.eval 0 ≠ a → ltp (q + C a)
-
--- inductive ltp' : polynomial ℂ → polynomial ℂ → Prop
--- | mul_X : ∀ {p}, p ≠ 0 → ltp' p (p * X)
--- | mul_C : ∀ {p q a}, a ≠ 0 → ltp' p q → ltp' p (C a * q)
--- | add   : ∀ {p q a}, ltp' p q → q.eval 0 ≠ a → ltp' p (q + C a)
-
--- lemma growth_lemma_chris1 {p q : polynomial ℂ} (hpq : ltp p q) :
---   ∃ r : ℝ, ∀ z : ℂ, r < z.abs →
---    abs (p.eval z) < abs (q.eval z) :=
--- ltp.rec_on hpq
---   (λ hq g hpq, ⟨1, λ z hz, by rw [eval_mul, eval_X, complex.abs_mul];
---     exact _⟩)
---   _
---   (λ q a hqp hpa ih p, _)
-
--- lemma growth_lemma_chris1 {p q : polynomial ℂ} (hpq : ltp' q p) :
---   ∃ r : ℝ, ∀ z : ℂ, r < z.abs → abs (q.eval z) < abs (p.eval z) :=
--- ltp'.rec_on hpq
---   _
---   _
---   (λ p a hqp hpa _, _)
-
--- example : ∀ p : polynomial ℂ, ¬less_than p 0 :=
--- λ p h, less_than.rec_on h _ _ _
-
--- lemma polynomial_tendsto_infinity : ∀ {p : polynomial ℂ}, 0 < degree p →
---   ∀ x : ℝ, ∃ r : ℝ, ∀ z : ℂ, r < z.abs → x < (p.eval z).abs
--- | p := λ hp x, if h : degree p = 1
--- then
---   let ⟨n, hn⟩ := archimedean.arch (1 : ℝ)
---     (show 0 < abs (leading_coeff p),
---       from abs_pos.2 (λ hp0, by simp * at *; contradiction)) in
---   ⟨↑n * abs (p.eval 0) + n * (_root_.abs x), λ z hz,
---     calc x ≤ _root_.abs x : le_abs_self _
---     ... < abs (p.eval z) : lt_of_mul_lt_mul_left
---       (calc (n : ℝ) * _root_.abs x < abs z - n * abs (eval 0 p) :
---           lt_sub_iff_add_lt'.2 hz
---         ... ≤ n * abs (leading_coeff p * z) - n * abs (p.eval 0) :
---           sub_le_sub_right (by rw [complex.abs_mul, ← mul_assoc];
---           exact le_mul_of_ge_one_left (complex.abs_nonneg _)
---             (by simpa [mul_comm, add_monoid.smul_eq_mul] using hn)) _
---         ... = ↑n * (abs (leading_coeff p * z) - abs (-eval 0 p)) : by simp [mul_add]
---         ... ≤ ↑n * (abs (leading_coeff p * z - -eval 0 p)) :
---           mul_le_mul_of_nonneg_left
---             (le_trans (le_abs_self _) (complex.abs_abs_sub_le_abs_sub _ _))
---             (nat.cast_nonneg n)
---         ... = ↑n * abs (p.eval z) :
---           by conv_rhs {rw degree_eq_one h}; simp [coeff_zero_eq_eval_zero])
---       (nat.cast_nonneg n)⟩
--- else
---   have wf : degree (p /ₘ X) < degree p,
---     from degree_div_by_monic_lt _ monic_X (λ hp0, by simp * at *)
---       (by rw degree_X; exact dec_trivial),
---   have hp : 1 < degree p, from match degree p, hp, h with
---     | none    := dec_trivial
---     | (some n) := λ h0 h1, lt_of_le_of_ne ( .coe_le_coe.2 ( .coe_lt_coe.1 h0)) (ne.symm h1)
---     end,
---   have hXp : degree X ≤ degree p, from le_of_lt (by rw @degree_X ℂ; exact hp),
---   let ⟨r, hr⟩ := @polynomial_tendsto_infinity (p /ₘ X)
---     (@lt_of_add_lt_add_left' _ _ (1 :   ℕ) _ _
---       (calc (1 :   ℕ) + 0 < degree p : hp
---         ... = 1 + degree (p /ₘ X) : by rw [← @degree_X ℂ, degree_add_div_by_monic monic_X hXp]))
---   (x + (p.eval 0).abs) in
---   ⟨max 1 (r + (p.eval 0).abs), λ z hz,
---     calc x < abs (eval z (p /ₘ X)) - abs (eval 0 p) :
---       lt_sub_iff_add_lt.2 (hr z (lt_of_le_of_lt (le_add_of_nonneg_right (complex.abs_nonneg _))
---         (lt_of_le_of_lt (le_max_right _ _) hz)))
---     ... ≤ abs z * abs (eval z (p /ₘ X)) - abs (eval 0 p) :
---       sub_le_sub_right (le_mul_of_ge_one_left (complex.abs_nonneg _) (le_trans (le_max_left _ _) (le_of_lt hz))) _
---     ... ≤ _root_.abs (abs (z * eval z (p /ₘ X)) - abs (-eval 0 p)) : by rw [complex.abs_neg, ← complex.abs_mul];
---       exact le_abs_self _
---     ... ≤ abs (z * eval z (p /ₘ X) - -eval 0 p) : abs_abs_sub_le_abs_sub _ _
---     ... = abs (eval z p) : by conv_rhs {rw ← mod_by_monic_add_div p monic_X};
---       simp [coeff_zero_eq_eval_zero, mod_by_monic_X]⟩
--- using_well_founded {dec_tac := tactic.assumption}
-
-
--- @[elab_as_eliminator] protected lemma induction_on {M : polynomial ℂ → Prop} (p : polynomial ℂ )
---   (h_C : ∀a, M (C a))
---   (h_add : ∀p q, M p → M q → M (p + q))
---   (h_monomial : ∀(n : ℕ) (a : ℂ), M (C a * X^n) → M (C a * X^(n+1))) :
---   M p :=
--- have ∀{n:ℕ} {a}, M (C a * X^n),
--- begin
---   assume n a,
---   induction n with n ih,
---   { simp only [pow_zero, mul_one, h_C] },
---   { exact h_monomial _ _ ih }
--- end,
--- finsupp.induction p
---   (suffices M (C 0), by simpa only [C, single_zero],
---     h_C 0)
---   (assume n a p _ _ hp, suffices M (C a * X^n + p), by rwa [single_eq_C_mul_X],
---     h_add _ _ this hp)
-#print finsupp.induction
-
-lemma zero_le_degree_iff {α : Type*} [comm_semiring α]
-  [decidable_eq α] {p : polynomial α} :
-  0 ≤ degree p ↔ p ≠ 0 :=
-by rw [ne.def, ← degree_eq_bot];
-  cases degree p; exact dec_trivial
-
-lemma X_ne_zero {α : Type*} [nonzero_comm_ring α]
-  [decidable_eq α] : (X : polynomial α) ≠ 0 :=
-mt (congr_arg (λ p, coeff p 1)) (by simp)
-
-@[elab_as_eliminator] lemma induction_on' {α : Type*}
+@[elab_as_eliminator] def rec_on_horner {α : Type*}
   [nonzero_comm_ring α] [decidable_eq α]
-  {P : polynomial α → Prop} : Π (p : polynomial α),
-  P 0 →
-  (Π {p}, P p → P (p * X)) →
-  (Π {p} {a}, P p → P (p + C a)) →
-  P p
-| p := λ h0 hX hC,
-if hp : p = 0 then hp.symm ▸ h0
+  {M : polynomial α → Sort*} : Π (p : polynomial α),
+  M 0 →
+  (Π p a, coeff p 0 = 0 → a ≠ 0 → M p → M (p + C a)) →
+  (Π p, p ≠ 0 → M p → M (p * X)) →
+  M p
+| p := λ M0 MC MX,
+if hp : p = 0 then eq.rec_on hp.symm M0
 else
 have wf : degree (p /ₘ X) < degree p,
   from degree_div_by_monic_lt _ monic_X hp (by rw degree_X; exact dec_trivial),
-by rw [← mod_by_monic_add_div p monic_X, mod_by_monic_X,
-  add_comm, mul_comm] at *; exact
-  hC (hX (induction_on' _ h0 @hX @hC))
+by rw [← mod_by_monic_add_div p monic_X, mod_by_monic_X, ← coeff_zero_eq_eval_zero,
+  add_comm, mul_comm] at *;
+  exact
+  if hcp0 : coeff p 0 = 0
+  then by rw [hcp0, C_0, add_zero];
+    exact MX _ (λ h : p /ₘ X = 0, by simpa [h, hcp0] using hp)
+      (rec_on_horner _ M0 MC MX)
+  else MC _ _ (coeff_mul_X_zero _) hcp0 (if hpX0 : p /ₘ X = 0
+    then show M (p /ₘ X * X), by rw [hpX0, zero_mul]; exact M0
+    else MX (p /ₘ X) hpX0 (rec_on_horner _ M0 MC MX))
 using_well_founded {dec_tac := tactic.assumption}
 
 @[elab_as_eliminator] lemma degree_pos_induction_on
@@ -141,15 +34,9 @@ using_well_founded {dec_tac := tactic.assumption}
   (hC : ∀ {a}, a ≠ 0 → P (C a * X))
   (hX : ∀ {p}, 0 < degree p → P p → P (p * X))
   (hadd : ∀ {p} {a}, 0 < degree p → P p → P (p + C a)) : P p :=
-induction_on' p
+rec_on_horner p
   (λ h, by rw degree_zero at h; exact absurd h dec_trivial)
-  (λ p ih h0',
-    if h0 : 0 < degree p
-    then hX h0 (ih h0)
-    else by rw [eq_C_of_degree_le_zero (le_of_not_gt h0)] at *;
-      exact hC (λ h : coeff p 0 = 0,
-        by simpa [h, not_lt.2 (@lattice.bot_le (  ℕ) _ _)] using h0'))
-  (λ p a ih h0,
+  (λ p a _ _ ih h0,
     have 0 < degree p,
       from calc 0 < degree (p + C a) : h0
         ... = degree (C (-a) + (p + C a)) :
@@ -157,9 +44,28 @@ induction_on' p
             lt_of_le_of_lt degree_C_le h0
         ... = _ : by simp [is_ring_hom.map_neg (@C α _ _)],
     hadd this (ih this))
+  (λ p _ ih h0',
+    if h0 : 0 < degree p
+    then hX h0 (ih h0)
+    else by rw [eq_C_of_degree_le_zero (le_of_not_gt h0)] at *;
+      exact hC (λ h : coeff p 0 = 0,
+        by simpa [h, not_lt.2 (@lattice.bot_le (  ℕ) _ _)] using h0'))
   h0
 
-lemma polynomial_tendsto_infinity' {p : polynomial ℂ} (h : 0 < degree p) :
+open filter
+
+lemma tendsto_at_top_at_top {α β : Type} [preorder α] [preorder β]
+  [hα : nonempty α]
+  (h : directed (@has_le.le α _) id)
+  (f : α → β) :
+  tendsto f at_top at_top ↔ ∀ (b : β), ∃ (i : α), ∀ (a : α), i ≤ a → b ≤ f a :=
+have directed ge (λ (a : α), principal {b : α | a ≤ b}),
+  from λ a b, let ⟨z, hz⟩ := h b a in
+    ⟨z, λ s h x hzx, h (le_trans hz.2 hzx),
+      λ s h x hzx, h (le_trans hz.1 hzx)⟩,
+by rw [tendsto_at_top, at_top, infi_sets_eq this hα]; simp
+
+lemma polynomial_tendsto_infinity {p : polynomial ℂ} (h : 0 < degree p) :
   ∀ x : ℝ, ∃ r > 0, ∀ z : ℂ, r < z.abs → x < (p.eval z).abs :=
 degree_pos_induction_on p h
   (λ a ha x, ⟨max (x / a.abs) 1, (lt_max_iff.2 (or.inr zero_lt_one)), λ z hz,
@@ -175,24 +81,8 @@ degree_pos_induction_on p h
         (by rw complex.abs_neg; exact (hr z hz)))
         (le_trans (le_abs_self _) (complex.abs_abs_sub_le_abs_sub _ _))⟩)
 
-lemma polynomial.is_unit_iff {p : polynomial ℂ} : is_unit p ↔ degree p = 0 :=
-⟨λ h, let ⟨q, hq⟩ := is_unit_iff_dvd_one.1 h in
-    have hp0 : p ≠ 0, from λ hp0, by simpa [hp0] using hq,
-    have hq0 : q ≠ 0, from λ hp0, by simpa [hp0] using hq,
-    have nat_degree (1 : polynomial ℂ) = nat_degree (p * q),
-      from congr_arg _ hq,
-    by rw [nat_degree_one, nat_degree_mul_eq hp0 hq0, eq_comm,
-        add_eq_zero_iff, ← with_bot.coe_eq_coe,
-        ← degree_eq_nat_degree hp0] at this;
-      exact this.1,
-  λ h, have degree p ≤ 0, by simp [*, le_refl],
-    have hc : coeff p 0 ≠ 0, from λ hc,
-        by rw [eq_C_of_degree_le_zero this, hc] at h;
-        simpa using h,
-    is_unit_iff_dvd_one.2 ⟨C (coeff p 0)⁻¹, begin
-      conv in p { rw eq_C_of_degree_le_zero this },
-      rw [← C_mul, _root_.mul_inv_cancel hc, C_1]
-    end⟩⟩
+#print tendsto
+
 
 noncomputable instance decidable_dvd {α : Type*} [comm_semiring α] [decidable_eq α] :
   decidable_rel (@has_dvd.dvd (polynomial α) _) :=
@@ -200,7 +90,7 @@ classical.dec_rel _
 
 lemma polynomial.finite_of_degree_pos {α : Type*} [integral_domain α] [decidable_eq α]
   {p q : polynomial α} (hp : (0 : with_bot ℕ) < degree p) (hq : q ≠ 0) :
-  prime_count.finite p q :=
+  multiplicity.finite p q :=
 ⟨nat_degree q, λ ⟨r, hr⟩,
   have hp0 : p ≠ 0, from λ hp0, by simp [hp0] at hp; contradiction,
   have hr0 : r ≠ 0, from λ hr0, by simp * at *,
@@ -216,11 +106,10 @@ lemma polynomial.finite_of_degree_pos {α : Type*} [integral_domain α] [decidab
       (add_pos_of_pos_of_nonneg (by rwa one_mul) (nat.zero_le _))) this
   end⟩
 
-
 noncomputable def polynomial.multiplicity {α : Type*} [integral_domain α] [decidable_eq α]
   (p : polynomial α) (a :  α) : ℕ :=
 if h0 : p = 0 then 0 else
-(prime_count (X - C a) p).get (polynomial.finite_of_degree_pos
+(multiplicity (X - C a) p).get (polynomial.finite_of_degree_pos
   (by rw degree_X_sub_C; exact dec_trivial) h0)
 
 lemma pow_multiplicity_dvd {α : Type*} [integral_domain α] [decidable_eq α]
@@ -228,7 +117,7 @@ lemma pow_multiplicity_dvd {α : Type*} [integral_domain α] [decidable_eq α]
   (X - C a) ^ polynomial.multiplicity p a ∣ p :=
 if h : p = 0 then by simp [h]
 else by rw [polynomial.multiplicity, dif_neg h];
-  exact prime_count.spec _
+  exact multiplicity.spec _
 
 lemma div_by_monic_mul_pow_multiplicity_eq
   {α : Type*} [integral_domain α] [decidable_eq α]
@@ -251,50 +140,21 @@ begin
   have := div_by_monic_mul_pow_multiplicity_eq p a,
   rw [mul_comm, hq, ← mul_assoc, ← pow_succ',
     polynomial.multiplicity, dif_neg hp] at this,
-  refine prime_count.is_greatest'
+  refine multiplicity.is_greatest'
     (polynomial.finite_of_degree_pos
     (show (0 : with_bot ℕ) < degree (X - C a),
       by rw degree_X_sub_C; exact dec_trivial) hp)
     (nat.lt_succ_self _) (dvd_of_mul_right_eq _ this)
 end
 
-@[simp] lemma mod_by_monic_one (p : polynomial ℂ) : p %ₘ 1 = 0 :=
-(dvd_iff_mod_by_monic_eq_zero monic_one).2 (one_dvd _)
-
-@[simp] lemma div_by_monic_one (p : polynomial ℂ) : p /ₘ 1 = p :=
-by conv_rhs { rw [← mod_by_monic_add_div p monic_one] }; simp
---set_option pp.notation false
-instance : proper_space ℂ :=
-⟨λ x y f hf h, begin
-  unfold filter.principal at h,
-  unfold lattice.has_inf.inf,
-end⟩
-
-#print closed_of_compact
-#print mem_of_is_glb_of_is_closed
-#print lattice.infi_lt_iff
-#print compact_of_closed
-#print closed_ball
-#print lattice.le_Inf_iff
-#print is_glb
--- #print cinf_union
-
-/--- NT=OT Trueeeee change attains infi-/
-example {s t : set ℝ} (hst : s ⊆ t) (hs : ∃ x, x ∈ s) (hb : bdd_below s)
-  (ht : ∀ x ∈ t, x ∉ s → lattice.Inf t + 1 < x) :
-  is_glb s (lattice.Inf t) :=
-_
-
 local attribute [instance, priority 0] classical.prop_decidable
-
-lemma classical.not_imp {p q : Prop} : ¬ (p → q) ↔ p ∧ ¬ q := not_imp
 
 lemma attains_infi (p : polynomial ℂ) :
   ∃ x, (p.eval x).abs = ⨅ y, (p.eval y).abs :=
 if hp0 : 0 < degree p then
 have hb : bdd_below (set.range (λ x, (p.eval x).abs)),
   from ⟨0, λ _ ⟨y, hy⟩, (hy : _ = _) ▸ complex.abs_nonneg _⟩,
-let ⟨r, hr0, hr⟩ := polynomial_tendsto_infinity' hp0 ((⨅ y, (p.eval y).abs) + 1) in
+let ⟨r, hr0, hr⟩ := polynomial_tendsto_infinity hp0 ((⨅ y, (p.eval y).abs) + 1) in
 have (⨅ y, (p.eval y).abs) ∈ (λ x, (p.eval x).abs) '' closed_ball 0 r,
   from mem_of_is_glb_of_is_closed
     ⟨λ x ⟨z, hz₁, hz₂⟩, hz₂ ▸ lattice.cinfi_le ⟨0, λ _ ⟨y, hy⟩, (hy : _ = _) ▸ complex.abs_nonneg _⟩,
@@ -313,24 +173,52 @@ have (⨅ y, (p.eval y).abs) ∈ (λ x, (p.eval x).abs) '' closed_ball 0 r,
           ... ≤ _ : le_of_lt hz
           ... ≤ _ : le_of_lt (hr _ hry))⟩
     (set.ne_empty_iff_exists_mem.2 ⟨(p.eval 0).abs, ⟨0, by simp [le_of_lt hr0], rfl⟩⟩)
-  (closed_of_compact _ (compact_image _
+  (closed_of_compact _ (compact_image (proper_space.compact_ball _ _)
     ((polynomial.continuous_eval _).comp complex.continuous_abs))),
-let ⟨g, hg⟩ := this in
-⟨g, hg.2⟩
+let ⟨g, hg⟩ := this in ⟨g, hg.2⟩
+else ⟨0, by rw [eq_C_of_degree_le_zero (le_of_not_gt hp0), eval_C]; simp⟩
 
-axiom nth_root (n : ℕ) (z : ℂ) : ℂ
+noncomputable def nth_root (z : ℂ) (n : ℕ) : ℂ :=
+if z = 0 then 0 else exp (log z / n)
 
-@[simp] axiom nth_root_pow (n : ℕ) (z : ℂ) : nth_root n z ^ n = z
+#print real.nth_root_pos
 
-axiom abs_nth_root (n : ℕ) (z : ℂ) : abs (nth_root n z) =
-  real.nth_root (abs z) n
+lemma exp_mul_nat (z : ℂ) (n : ℕ) : exp (z * n) = exp z ^ n :=
+by induction n; simp [*, exp_add, add_mul, mul_add, pow_succ]
 
-#print real.nth_root
+@[simp] lemma nth_root_pow (z : ℂ) {n : ℕ} (h : 0 < n) : nth_root z n ^ n = z :=
+if hz0 : z = 0 then by simp [hz0, nth_root, zero_pow h]
+else by rw [nth_root, if_neg hz0, ← exp_mul_nat, @div_mul_cancel ℂ _ _ _
+    (nat.cast_ne_zero.2 (nat.pos_iff_ne_zero.1 h)), exp_log hz0]
+
+@[simp] lemma nth_root_zero (n : ℕ) : nth_root 0 n = 0 := if_pos rfl
+
+@[simp] lemma nth_root_eq_zero {z : ℂ} {n : ℕ} : nth_root z n = 0 ↔ z = 0 :=
+⟨λ h, by_contradiction $ λ hz0, by simpa [nth_root, hz0, exp_ne_zero] using h,
+  λ h, h.symm ▸ nth_root_zero n⟩
+
+lemma abs_nth_root (n : ℕ) (z : ℂ) : abs (nth_root z n) =
+  real.nth_root (abs z) n :=
+if hz0 : z = 0 then by simp [nth_root, real.nth_root, hz0]
+else if hn : n = 0 then by simp [hn, real.nth_root, hz0, nth_root]
+else
+  have hn : 0 < n, from nat.pos_of_ne_zero hn,
+  pow_right_inj (complex.abs_pos.2 (mt nth_root_eq_zero.1 hz0))
+    (real.nth_root_pos (mt complex.abs_eq_zero.1 hz0)) hn
+    (by rw [← complex.abs_pow, nth_root_pow _ hn, real.nth_root_power
+      (complex.abs_pos.2 hz0) hn])
 
 open euclidean_domain
+
 local attribute [instance, priority 0] classical.prop_decidable
+
 set_option trace.simplify.rewrite true
-lemma FTA {f : polynomial ℂ} (hf : 0 < degree f) : ∃ z : ℂ, is_root f z :=
+
+lemma FTA {f : polynomial ℂ} (hf : degree f ≠ 0) : ∃ z : ℂ, is_root f z :=
+if hb : degree f = ⊥ then ⟨37, by simp [*, degree_eq_bot] at *⟩
+else
+have hf : 0 < degree f, by revert hb hf; cases degree f with b;
+  {exact dec_trivial <|> {cases b; exact dec_trivial}},
 let ⟨z₀, hz₀⟩ := attains_infi f in
 exists.intro z₀ $ by_contradiction $ λ hf0,
 have hfX : f - C (f.eval z₀) ≠ 0,
@@ -358,26 +246,24 @@ have hδ : ∀ z : ℂ, abs (z - z₀) = δ → abs (g.eval z - g.eval z₀) <
       (half_lt_self hδ'₁)),
 have hδ1 : δ ≤ 1, from le_trans (min_le_left _ _) (min_le_right _ _),
 let F : polynomial ℂ := C (f.eval z₀) + C (g.eval z₀) * (X - C z₀) ^ n in
-let z' := nth_root n (-f.eval z₀ * (g.eval z₀).abs * δ ^ n /
-  ((f.eval z₀).abs * g.eval z₀)) + z₀ in
+let z' := nth_root (-f.eval z₀ * (g.eval z₀).abs * δ ^ n /
+  ((f.eval z₀).abs * g.eval z₀)) n + z₀ in
 have hF₁ : F.eval z' = f.eval z₀ - f.eval z₀ * (g.eval z₀).abs
     * δ ^ n / (f.eval z₀).abs,
-  by simp [F, nth_root_pow, div_eq_mul_inv, eval_pow, mul_assoc,
+  by simp [F, nth_root_pow _ hn0, div_eq_mul_inv, eval_pow, mul_assoc,
       mul_comm (g.eval z₀),
       mul_left_comm (g.eval z₀), mul_left_comm (g.eval z₀)⁻¹,
       mul_inv', inv_mul_cancel hg0];
     simp [mul_comm, mul_left_comm, mul_assoc],
 have hδs : (g.eval z₀).abs * δ ^ n / (f.eval z₀).abs < 1,
-  begin
-    rw [div_eq_mul_inv, mul_right_comm, mul_comm,
+  by rw [div_eq_mul_inv, mul_right_comm, mul_comm,
       ← @inv_inv' _ _ (complex.abs _ * _), mul_inv',
-      inv_inv', ← div_eq_mul_inv, div_lt_iff hfg0, one_mul],
+      inv_inv', ← div_eq_mul_inv, div_lt_iff hfg0, one_mul];
     calc δ ^ n ≤ δ ^ 1 : pow_le_pow_of_le_one
         (le_of_lt hδ0) hδ1 hn0
       ... = δ : _root_.pow_one _
       ... ≤ ((f.eval z₀).abs / (g.eval z₀).abs) / 2 : min_le_right _ _
-      ... < _ : half_lt_self hfg0
-  end,
+      ... < _ : half_lt_self hfg0,
 have hF₂ : (F.eval z').abs = (f.eval z₀).abs - (g.eval z₀).abs * δ ^ n,
   from calc (F.eval z').abs = (f.eval z₀ - f.eval z₀ * (g.eval z₀).abs
     * δ ^ n / (f.eval z₀).abs).abs : congr_arg abs hF₁
@@ -390,14 +276,12 @@ have hF₂ : (F.eval z').abs = (f.eval z₀).abs - (g.eval z₀).abs * δ ^ n,
 have hef0 : abs (eval z₀ g) * (eval z₀ f).abs ≠ 0,
   from mul_ne_zero (mt complex.abs_eq_zero.1 hg0)
     (mt complex.abs_eq_zero.1 hf0),
-have hz'z₀ : abs (z' - z₀) = δ :=
-  begin
-     simp [z', mul_assoc, mul_left_comm _ (_ ^ n),
-      mul_comm _ (_ ^ n), mul_comm (eval z₀ f).abs,
-      _root_.mul_div_cancel _ hef0, of_real_mul,
-      neg_mul_eq_neg_mul_symm, neg_div, abs_nth_root,
-      is_absolute_value.abv_pow complex.abs],
-  end,
+have hz'z₀ : abs (z' - z₀) = δ,
+  by simp [z', mul_assoc, mul_left_comm _ (_ ^ n), mul_comm _ (_ ^ n),
+    mul_comm (eval z₀ f).abs, _root_.mul_div_cancel _ hef0, of_real_mul,
+    neg_mul_eq_neg_mul_symm, neg_div, abs_nth_root,
+    is_absolute_value.abv_pow complex.abs,
+    complex.abs_of_nonneg (le_of_lt hδ0), real.nth_root_unique' hδ0 hn0],
 have hF₃ : (f.eval z' - F.eval z').abs < (g.eval z₀).abs * δ ^ n,
   from calc (f.eval z' - F.eval z').abs
       = (g.eval z' - g.eval z₀).abs * (z' - z₀).abs ^ n :
@@ -415,6 +299,48 @@ calc (f.eval z₀).abs = ⨅ y, (f.eval y).abs : hz₀
 ... ≤ (F.eval z').abs + (f.eval z' - F.eval z').abs : complex.abs_add _ _
 ... < (f.eval z₀).abs - (g.eval z₀).abs * δ ^ n + (g.eval z₀).abs * δ ^ n :
   add_lt_add_of_le_of_lt (by rw hF₂) hF₃
-... = _ : by simp
+... = (f.eval z₀).abs : sub_add_cancel _ _
 
-#print FTA
+lemma degree_pos_of_ne_zero_of_nonunit {α : Type*} [field α] [decidable_eq α]
+  {p : polynomial α} (hp0 : p ≠ 0) (hp : ¬is_unit p) : 0 < degree p :=
+lt_of_not_ge (λ h, by rw [eq_C_of_degree_le_zero h] at hp0 hp;
+  exact hp ⟨units.map C (units.mk0 (coeff p 0) (mt C_inj.2 (by simpa using hp0))), rfl⟩)
+
+lemma irreducible_of_degree_eq_one {α : Type*} [discrete_field α] [decidable_eq α]
+  {p : polynomial α} (hp1 : degree p = 1) : irreducible p :=
+⟨mt is_unit_iff_dvd_one.1 (λ ⟨q, hq⟩,
+  absurd (congr_arg degree hq) (λ h,
+    have degree q = 0, by rw [degree_one, degree_mul_eq, hp1, eq_comm,
+      nat.with_bot.add_eq_zero_iff] at h; exact h.2,
+    by simp [degree_mul_eq, this, degree_one, hp1] at h;
+      exact absurd h dec_trivial)),
+λ q r hpqr, begin
+  have := congr_arg degree hpqr,
+  rw [hp1, degree_mul_eq] at this,
+  rw [is_unit_iff, is_unit_iff],
+  cases degree q with dq,
+  { exact absurd this dec_trivial },
+  { cases degree r with dr,
+    { exact absurd this dec_trivial },
+    { have h : 1 = dq + dr := option.some_inj.1 this,
+      have hdq : dq ≤ 1, from h.symm ▸ nat.le_add_right _ _,
+      have hdr : dr ≤ 1, from h.symm ▸ nat.le_add_left _ _,
+      revert h this, revert hdq, revert dq, revert hdr, revert dr,
+      exact dec_trivial } },
+end⟩
+
+lemma prime_iff_degree_eq_one {p : polynomial ℂ} : prime p ↔ degree p = 1 :=
+iff.trans principal_ideal_domain.irreducible_iff_prime.symm
+⟨λ h, le_antisymm
+    (le_of_not_gt $ λ hp : 1 < degree p,
+      let ⟨z, hz⟩ := FTA (ne.symm (ne_of_lt (lt_trans dec_trivial hp))) in
+      let ⟨b, hb⟩ := dvd_iff_is_root.2 hz in
+      have hbu : ¬is_unit b,
+        from mt is_unit_iff.1 (λ h, absurd (congr_arg degree hb)
+          (λ hd, by rw [degree_mul_eq, h, degree_X_sub_C] at hd;
+            rw hd at hp; exact absurd hp dec_trivial)),
+      hbu ((h.2 _ b hb).resolve_left (mt is_unit_iff.1
+          (by rw [degree_X_sub_C]; exact dec_trivial))))
+    (with_bot.add_one_le_iff.2 (degree_pos_of_ne_zero_of_nonunit
+      (nonzero_of_irreducible h) h.1)),
+  irreducible_of_degree_eq_one⟩

@@ -348,6 +348,9 @@ instance : is_absolute_value abs :=
   abv_mul     := abs_mul }
 open is_absolute_value
 
+@[simp] lemma abs_pow (z : ℂ) (n : ℕ) : abs (z ^ n) = abs z ^ n :=
+is_absolute_value.abv_pow _ _ _
+
 @[simp] lemma abs_abs (z : ℂ) : abs' (abs z) = abs z :=
 _root_.abs_of_nonneg (abs_nonneg _)
 

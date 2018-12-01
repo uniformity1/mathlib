@@ -840,6 +840,13 @@ lemma exists_eq_add_of_lt : ∀ {m n : ℕ}, m < n → ∃ k : ℕ, n = m + k + 
 | 0 (n+1) h := ⟨n, by simp⟩
 | (m+1) (n+1) h := let ⟨k, hk⟩ := exists_eq_add_of_le (nat.le_of_succ_le_succ h) in ⟨k, by simp [hk]⟩
 
-
+lemma with_bot.add_eq_zero_iff : ∀ {n m : with_bot ℕ}, n + m = 0 ↔ n = 0 ∧ m = 0
+| none     m        := iff_of_false dec_trivial (λ h, absurd h.1 dec_trivial)
+| n        none     := iff_of_false (by cases n; exact dec_trivial)
+  (λ h, absurd h.2 dec_trivial)
+| (some n) (some m) := show (n + m : with_bot ℕ) = (0 : ℕ) ↔ (n : with_bot ℕ) = (0 : ℕ) ∧
+    (m : with_bot ℕ) = (0 : ℕ),
+  by rw [← with_bot.coe_add, with_bot.coe_eq_coe, with_bot.coe_eq_coe,
+    with_bot.coe_eq_coe, add_eq_zero_iff' (nat.zero_le _) (nat.zero_le _)]
 
 end nat

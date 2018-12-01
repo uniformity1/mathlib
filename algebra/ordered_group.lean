@@ -341,6 +341,11 @@ lemma add_one_le_of_lt : ∀ {n m : with_bot ℕ}, n < m → n + 1 ≤ m
 | (n : ℕ) (m : ℕ) h := with_bot.coe_le_coe.2 (with_bot.coe_lt_coe.1 h)
 | none    (m : ℕ) h := bot_le
 
+lemma add_one_le_iff {n : ℕ} {m : with_bot ℕ} :
+  (n + 1 : with_bot ℕ) ≤ m ↔ (n : with_bot ℕ) < m :=
+⟨option.rec_on m dec_trivial (λ n, with_bot.coe_lt_coe.2 ∘ with_bot.coe_le_coe.1),
+  add_one_le_of_lt⟩
+
 end with_bot
 
 section canonically_ordered_monoid

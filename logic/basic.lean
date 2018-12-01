@@ -64,6 +64,10 @@ instance subsingleton_pempty : subsingleton pempty := ⟨λa, a.elim⟩
 lemma congr_arg_heq {α} {β : α → Sort*} (f : ∀ a, β a) : ∀ {a₁ a₂ : α}, a₁ = a₂ → f a₁ == f a₂
 | a _ rfl := heq.rfl
 
+lemma well_founded.irrefl {r : α → α → Prop} (hr : well_founded r) :
+  ∀ (a : α), ¬ r a a :=
+well_founded.fix hr (λ a ih haa, ih a haa haa)
+
 end miscellany
 
 /-

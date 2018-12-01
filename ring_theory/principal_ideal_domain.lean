@@ -144,15 +144,16 @@ lemma is_maximal_of_irreducible {p : α} (hp : irreducible p) :
   rw [span_singleton_le_span_singleton, mul_dvd_of_is_unit_right hb]
 end⟩
 
-lemma prime_of_irreducible {p : α} (hp : irreducible p) : prime p :=
-(span_singleton_prime $ nonzero_of_irreducible hp).1 $
-  (is_maximal_of_irreducible hp).is_prime
+lemma irreducible_iff_prime {p : α} : irreducible p ↔ prime p :=
+⟨λ hp, (span_singleton_prime $ nonzero_of_irreducible hp).1 $
+  (is_maximal_of_irreducible hp).is_prime,
+    irreducible_of_prime⟩
 
 lemma associates_prime_of_irreducible : ∀{p : associates α}, irreducible p → p.prime :=
 associates.forall_associated.2 $ assume a,
 begin
   rw [associates.irreducible_mk_iff, associates.prime_mk],
-  exact prime_of_irreducible
+  exact irreducible_iff_prime.1
 end
 
 lemma eq_of_prod_eq_associates {s : multiset (associates α)} :

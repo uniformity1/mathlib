@@ -108,8 +108,10 @@ lemma dvd_iff_mod_eq_zero {a b : α} : b ∣ a ↔ a % b = 0 :=
       by rw [div_add_mod, hc, mul_div_cancel_left _ hb, add_zero],
     λ h, ⟨a / b, eq.symm $ by simpa [*] using div_add_mod a b⟩⟩)
 
-instance decidable_dvd [decidable_eq α] : @decidable_rel α (∣) :=
-assume a n, decidable_of_iff _ dvd_iff_mod_eq_zero.symm
+lemma zero_lt_iff {a : α} : 0 ≺ a ↔ a ≠ 0 :=
+⟨λ h ha0, absurd h (ha0 ▸ well_founded.irrefl (r_well_founded _) _),
+  λ ha, calc 0 = a % a : by simp
+           ... ≺ _ : mod_lt _ ha⟩
 
 section gcd
 variable [decidable_eq α]
