@@ -81,9 +81,6 @@ degree_pos_induction_on p h
         (by rw complex.abs_neg; exact (hr z hz)))
         (le_trans (le_abs_self _) (complex.abs_abs_sub_le_abs_sub _ _))⟩)
 
-#print tendsto
-
-
 noncomputable instance decidable_dvd {α : Type*} [comm_semiring α] [decidable_eq α] :
   decidable_rel (@has_dvd.dvd (polynomial α) _) :=
 classical.dec_rel _
@@ -181,8 +178,6 @@ else ⟨0, by rw [eq_C_of_degree_le_zero (le_of_not_gt hp0), eval_C]; simp⟩
 noncomputable def nth_root (z : ℂ) (n : ℕ) : ℂ :=
 if z = 0 then 0 else exp (log z / n)
 
-#print real.nth_root_pos
-
 lemma exp_mul_nat (z : ℂ) (n : ℕ) : exp (z * n) = exp z ^ n :=
 by induction n; simp [*, exp_add, add_mul, mul_add, pow_succ]
 
@@ -201,18 +196,13 @@ lemma abs_nth_root (n : ℕ) (z : ℂ) : abs (nth_root z n) =
   real.nth_root (abs z) n :=
 if hz0 : z = 0 then by simp [nth_root, real.nth_root, hz0]
 else if hn : n = 0 then by simp [hn, real.nth_root, hz0, nth_root]
-else
-  have hn : 0 < n, from nat.pos_of_ne_zero hn,
+else have hn : 0 < n, from nat.pos_of_ne_zero hn,
   pow_right_inj (complex.abs_pos.2 (mt nth_root_eq_zero.1 hz0))
     (real.nth_root_pos (mt complex.abs_eq_zero.1 hz0)) hn
     (by rw [← complex.abs_pow, nth_root_pow _ hn, real.nth_root_power
       (complex.abs_pos.2 hz0) hn])
 
-open euclidean_domain
-
 local attribute [instance, priority 0] classical.prop_decidable
-
-set_option trace.simplify.rewrite true
 
 lemma FTA {f : polynomial ℂ} (hf : degree f ≠ 0) : ∃ z : ℂ, is_root f z :=
 if hb : degree f = ⊥ then ⟨37, by simp [*, degree_eq_bot] at *⟩
@@ -301,34 +291,6 @@ calc (f.eval z₀).abs = ⨅ y, (f.eval y).abs : hz₀
   add_lt_add_of_le_of_lt (by rw hF₂) hF₃
 ... = (f.eval z₀).abs : sub_add_cancel _ _
 
-lemma degree_pos_of_ne_zero_of_nonunit {α : Type*} [field α] [decidable_eq α]
-  {p : polynomial α} (hp0 : p ≠ 0) (hp : ¬is_unit p) : 0 < degree p :=
-lt_of_not_ge (λ h, by rw [eq_C_of_degree_le_zero h] at hp0 hp;
-  exact hp ⟨units.map C (units.mk0 (coeff p 0) (mt C_inj.2 (by simpa using hp0))), rfl⟩)
-
-lemma irreducible_of_degree_eq_one {α : Type*} [discrete_field α] [decidable_eq α]
-  {p : polynomial α} (hp1 : degree p = 1) : irreducible p :=
-⟨mt is_unit_iff_dvd_one.1 (λ ⟨q, hq⟩,
-  absurd (congr_arg degree hq) (λ h,
-    have degree q = 0, by rw [degree_one, degree_mul_eq, hp1, eq_comm,
-      nat.with_bot.add_eq_zero_iff] at h; exact h.2,
-    by simp [degree_mul_eq, this, degree_one, hp1] at h;
-      exact absurd h dec_trivial)),
-λ q r hpqr, begin
-  have := congr_arg degree hpqr,
-  rw [hp1, degree_mul_eq] at this,
-  rw [is_unit_iff, is_unit_iff],
-  cases degree q with dq,
-  { exact absurd this dec_trivial },
-  { cases degree r with dr,
-    { exact absurd this dec_trivial },
-    { have h : 1 = dq + dr := option.some_inj.1 this,
-      have hdq : dq ≤ 1, from h.symm ▸ nat.le_add_right _ _,
-      have hdr : dr ≤ 1, from h.symm ▸ nat.le_add_left _ _,
-      revert h this, revert hdq, revert dq, revert hdr, revert dr,
-      exact dec_trivial } },
-end⟩
-
 lemma prime_iff_degree_eq_one {p : polynomial ℂ} : prime p ↔ degree p = 1 :=
 iff.trans principal_ideal_domain.irreducible_iff_prime.symm
 ⟨λ h, le_antisymm
@@ -336,10 +298,10 @@ iff.trans principal_ideal_domain.irreducible_iff_prime.symm
       let ⟨z, hz⟩ := FTA (ne.symm (ne_of_lt (lt_trans dec_trivial hp))) in
       let ⟨b, hb⟩ := dvd_iff_is_root.2 hz in
       have hbu : ¬is_unit b,
-        from mt is_unit_iff.1 (λ h, absurd (congr_arg degree hb)
+        from mt is_unit_iff_degree_eq_zero.1 (λ h, absurd (congr_arg degree hb)
           (λ hd, by rw [degree_mul_eq, h, degree_X_sub_C] at hd;
             rw hd at hp; exact absurd hp dec_trivial)),
-      hbu ((h.2 _ b hb).resolve_left (mt is_unit_iff.1
+      hbu ((h.2 _ b hb).resolve_left (mt is_unit_iff_degree_eq_zero.1
           (by rw [degree_X_sub_C]; exact dec_trivial))))
     (with_bot.add_one_le_iff.2 (degree_pos_of_ne_zero_of_nonunit
       (nonzero_of_irreducible h) h.1)),
