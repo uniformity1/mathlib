@@ -346,6 +346,8 @@ lemma add_one_le_iff {n : ℕ} {m : with_bot ℕ} :
 ⟨option.rec_on m dec_trivial (λ n, with_bot.coe_lt_coe.2 ∘ with_bot.coe_le_coe.1),
   add_one_le_of_lt⟩
 
+@[simp] lemma coe_one [has_one α] : ((1 : α) : with_bot α) = 1 := rfl
+
 end with_bot
 
 section canonically_ordered_monoid
