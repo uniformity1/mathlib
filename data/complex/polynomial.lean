@@ -1,5 +1,5 @@
-import analysis.exponential analysis.polynomial ring_theory.multiplicity
-import ring_theory.principal_ideal_domain
+import analysis.exponential analysis.polynomial
+import ring_theory.multiplicity
 open complex polynomial finset
 
 set_option eqn_compiler.zeta true
@@ -58,7 +58,7 @@ lemma tendsto_at_top_at_top {α β : Type} [preorder α] [preorder β]
   [hα : nonempty α]
   (h : directed (@has_le.le α _) id)
   (f : α → β) :
-  tendsto f at_top at_top ↔ ∀ (b : β), ∃ (i : α), ∀ (a : α), i ≤ a → b ≤ f a :=
+  tendsto f at_top at_top ↔ ∀ b, ∃ i, ∀ a, i ≤ a → b ≤ f a :=
 have directed ge (λ (a : α), principal {b : α | a ≤ b}),
   from λ a b, let ⟨z, hz⟩ := h b a in
     ⟨z, λ s h x hzx, h (le_trans hz.2 hzx),
@@ -204,11 +204,11 @@ else have hn : 0 < n, from nat.pos_of_ne_zero hn,
 
 local attribute [instance, priority 0] classical.prop_decidable
 
-lemma FTA {f : polynomial ℂ} (hf : degree f ≠ 0) : ∃ z : ℂ, is_root f z :=
+lemma exists_root {f : polynomial ℂ} (hf : degree f ≠ 0) : ∃ z : ℂ, is_root f z :=
 if hb : degree f = ⊥ then ⟨37, by simp [*, degree_eq_bot] at *⟩
 else
 have hf : 0 < degree f, by revert hb hf; cases degree f with b;
-  {exact dec_trivial <|> {cases b; exact dec_trivial}},
+  [exact dec_trivial, {cases b; exact dec_trivial}],
 let ⟨z₀, hz₀⟩ := attains_infi f in
 exists.intro z₀ $ by_contradiction $ λ hf0,
 have hfX : f - C (f.eval z₀) ≠ 0,
@@ -291,11 +291,10 @@ calc (f.eval z₀).abs = ⨅ y, (f.eval y).abs : hz₀
   add_lt_add_of_le_of_lt (by rw hF₂) hF₃
 ... = (f.eval z₀).abs : sub_add_cancel _ _
 
-lemma prime_iff_degree_eq_one {p : polynomial ℂ} : prime p ↔ degree p = 1 :=
-iff.trans principal_ideal_domain.irreducible_iff_prime.symm
+lemma irreducible_iff_degree_eq_one {p : polynomial ℂ} : irreducible p ↔ degree p = 1 :=
 ⟨λ h, le_antisymm
     (le_of_not_gt $ λ hp : 1 < degree p,
-      let ⟨z, hz⟩ := FTA (ne.symm (ne_of_lt (lt_trans dec_trivial hp))) in
+      let ⟨z, hz⟩ := exists_root (ne.symm (ne_of_lt (lt_trans dec_trivial hp))) in
       let ⟨b, hb⟩ := dvd_iff_is_root.2 hz in
       have hbu : ¬is_unit b,
         from mt is_unit_iff_degree_eq_zero.1 (λ h, absurd (congr_arg degree hb)
