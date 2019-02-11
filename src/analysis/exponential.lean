@@ -1115,6 +1115,9 @@ begin
     (complex.of_real_mul _ _).symm, -complex.of_real_mul] at *
 end
 
+@[simp] lemma abs_cpow_inv_nat (x : ℂ) (n : ℕ) : abs (x ^ (n⁻¹ : ℂ)) = x.abs ^ (n⁻¹ : ℝ) :=
+by rw ← abs_cpow_real; simp [-abs_cpow_real]
+
 end complex
 
 namespace real

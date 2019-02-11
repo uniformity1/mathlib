@@ -67,6 +67,8 @@ def degree (p : polynomial α) : with_bot ℕ := p.support.sup some
 def degree_lt_wf : well_founded (λp q : polynomial α, degree p < degree q) :=
 inv_image.wf degree (with_bot.well_founded_lt nat.lt_wf)
 
+instance : has_well_founded (polynomial α) := ⟨_, degree_lt_wf⟩
+
 /-- `nat_degree p` forces `degree p` to ℕ, by defining nat_degree 0 = 0. -/
 def nat_degree (p : polynomial α) : ℕ := (degree p).get_or_else 0
 
@@ -79,7 +81,6 @@ lemma single_eq_C_mul_X : ∀{n}, single n a = C a * X^n
 
 lemma sum_C_mul_X_eq (p : polynomial α) : p.sum (λn a, C a * X^n) = p :=
 eq.trans (sum_congr rfl $ assume n hn, single_eq_C_mul_X.symm) (finsupp.sum_single _)
-
 
 @[elab_as_eliminator] protected lemma induction_on {M : polynomial α → Prop} (p : polynomial α)
   (h_C : ∀a, M (C a))
@@ -1004,8 +1005,6 @@ calc degree (p - q) = degree (erase (nat_degree q) p + -erase (nat_degree q) q) 
 ... ≤ max (degree (erase (nat_degree q) p)) (degree (erase (nat_degree q) q))
   : degree_neg (erase (nat_degree q) q) ▸ degree_add_le _ _
 ... < degree p : max_lt_iff.2 ⟨hd' ▸ degree_erase_lt hp0, hd.symm ▸ degree_erase_lt hq0⟩
-
-instance : has_well_founded (polynomial α) := ⟨_, degree_lt_wf⟩
 
 lemma ne_zero_of_ne_zero_of_monic (hp : p ≠ 0) (hq : monic q) : q ≠ 0
 | h := begin
