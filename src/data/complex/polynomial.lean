@@ -1,100 +1,5 @@
-import analysis.exponential topology.instances.polynomial ring_theory.multiplicity
+import data.polynomial topology.instances.polynomial analysis.exponential
 open complex polynomial finset metric
-
-@[simp] lemma coeff_mk {α : Type*} [comm_semiring α] [decidable_eq α] (s) (f) (h) :
-  coeff (finsupp.mk s f h : polynomial α) = f := rfl
-
-/-- `dix_X p` return a polynomial `q` such that `q * X + C (p.coeff 0) = p`.
-  It can be used in a semiring where the usual division algorithm is not possible -/
-def div_X {α : Type*} [comm_semiring α] [decidable_eq α]
-  (p : polynomial α) : polynomial α :=
-{ to_fun := λ n, p.coeff (n + 1),
-  support := ⟨(p.support.filter (> 0)).1.map (λ n, n - 1),
-    multiset.nodup_map_on begin
-        simp only [finset.mem_def.symm, finset.mem_erase, finset.mem_filter],
-        assume x hx y hy hxy,
-        rwa [← @add_right_cancel_iff _ _ 1, nat.sub_add_cancel hx.2,
-          nat.sub_add_cancel hy.2] at hxy
-      end
-      (p.support.filter (> 0)).2⟩,
-  mem_support_to_fun := λ n,
-    suffices (∃ (a : ℕ), (¬coeff p a = 0 ∧ a > 0) ∧ a - 1 = n) ↔
-      ¬coeff p (n + 1) = 0,
-    by simpa [finset.mem_def.symm, apply_eq_coeff],
-    ⟨λ ⟨a, ha⟩, by rw [← ha.2, nat.sub_add_cancel ha.1.2]; exact ha.1.1,
-      λ h, ⟨n + 1, ⟨h, nat.succ_pos _⟩, nat.succ_sub_one _⟩⟩ }
-
-lemma div_X_mul_X_add {α : Type*} [comm_semiring α] [decidable_eq α]
-  (p : polynomial α) : div_X p * X + C (p.coeff 0) = p :=
-polynomial.ext.2 $ λ n,
-  nat.cases_on n
-   (by simp)
-   (by simp [coeff_C, nat.succ_ne_zero, coeff_mul_X, div_X])
-
-@[simp] lemma div_X_C {α : Type*} [comm_semiring α] [decidable_eq α]
-  (a : α) : div_X (C a) = 0 :=
-polynomial.ext.2 $ λ n, by cases n; simp [div_X, coeff_C]; simp [coeff]
-
-lemma div_X_eq_zero_iff {α : Type*} [comm_semiring α] [decidable_eq α] {p : polynomial α}:
-  div_X p = 0 ↔ p = C (p.coeff 0) :=
-⟨λ h, by simpa [eq_comm, h] using div_X_mul_X_add p,
-  λ h, by rw [h, div_X_C]⟩
-
-lemma div_X_add {α : Type*} [comm_semiring α] [decidable_eq α] {p q: polynomial α}:
-  div_X (p + q) = div_X p + div_X q :=
-polynomial.ext.2 $ by simp [div_X]
-
-lemma degree_div_X_lt {α : Type*} [comm_semiring α] [decidable_eq α]
-  {p : polynomial α} : p ≠ 0 → (div_X p).degree < p.degree :=
-polynomial.induction_on p
-  (λ a h, have ha : a ≠ 0, by rwa [ne.def, ← C_inj, C_0],
-    by rw [div_X_C, degree_zero, degree_C ha]; exact dec_trivial)
-  _
-  _
-
-@[elab_as_eliminator] def rec_on_horner {α : Type*}
-  [comm_semiring α] [decidable_eq α]
-  {M : polynomial α → Sort*} : Π (p : polynomial α),
-  M 0 →
-  (Π p a, coeff p 0 = 0 → a ≠ 0 → M p → M (p + C a)) →
-  (Π p, p ≠ 0 → M p → M (p * X)) →
-  M p
-| p := λ M0 MC MX,
-if hp : p = 0 then eq.rec_on hp.symm M0
-else
-have wf : degree (div_X p) < degree p,
-  from degree_div_X_lt hp,
-by rw [← div_X_mul_X_add p] at *;
-  exact
-  if hcp0 : coeff p 0 = 0
-  then by rw [hcp0, C_0, add_zero];
-    exact MX _ (λ h : div_X p = 0, by simpa [h, hcp0] using hp)
-      (rec_on_horner _ M0 MC MX)
-  else MC _ _ (coeff_mul_X_zero _) hcp0 (if hpX0 : div_X p = 0
-    then show M (div_X p * X), by rw [hpX0, zero_mul]; exact M0
-    else MX (div_X p) hpX0 (rec_on_horner _ M0 MC MX))
-using_well_founded {dec_tac := tactic.assumption}
-
-@[elab_as_eliminator] lemma degree_pos_induction_on
-  {α : Type*} [comm_semiring α] [decidable_eq α]
-  {P : polynomial α → Prop} (p : polynomial α) (h0 : 0 < degree p)
-  (hC : ∀ {a}, a ≠ 0 → P (C a * X))
-  (hX : ∀ {p}, 0 < degree p → P p → P (p * X))
-  (hadd : ∀ {p} {a}, 0 < degree p → P p → P (p + C a)) : P p :=
-rec_on_horner p
-  (λ h, by rw degree_zero at h; exact absurd h dec_trivial)
-  (λ p a _ _ ih h0,
-    have 0 < degree p,
-      from lt_of_not_ge (λ h, (not_lt_of_ge degree_C_le) $
-        by rwa [eq_C_of_degree_le_zero h, ← C_add] at h0),
-    hadd this (ih this))
-  (λ p _ ih h0',
-    if h0 : 0 < degree p
-    then hX h0 (ih h0)
-    else by rw [eq_C_of_degree_le_zero (le_of_not_gt h0)] at *;
-      exact hC (λ h : coeff p 0 = 0,
-        by simpa [h, not_lt.2 (@lattice.bot_le (  ℕ) _ _)] using h0'))
-  h0
 
 open filter
 
@@ -116,8 +21,7 @@ degree_pos_induction_on p h
 
 local attribute [instance, priority 0] classical.prop_decidable
 
-lemma attains_infi (p : polynomial ℂ) :
-  ∃ x, (p.eval x).abs = ⨅ y, (p.eval y).abs :=
+lemma attains_infi (p : polynomial ℂ) : ∃ x, (p.eval x).abs = ⨅ y, (p.eval y).abs :=
 if hp0 : 0 < degree p then
 have hb : bdd_below (set.range (λ x, (p.eval x).abs)),
   from ⟨0, λ _ ⟨y, hy⟩, (hy : _ = _) ▸ complex.abs_nonneg _⟩,
@@ -147,11 +51,7 @@ else ⟨0, by rw [eq_C_of_degree_le_zero (le_of_not_gt hp0), eval_C]; simp⟩
 
 local attribute [instance, priority 0] classical.prop_decidable
 
-lemma exists_root {f : polynomial ℂ} (hf : degree f ≠ 0) : ∃ z : ℂ, is_root f z :=
-if hb : degree f = ⊥ then ⟨37, by simp [*, degree_eq_bot] at *⟩
-else
-have hf : 0 < degree f, by revert hb hf; cases degree f with b;
-  [exact dec_trivial, {cases b; exact dec_trivial}],
+lemma exists_root {f : polynomial ℂ} (hf : 0 < degree f) : ∃ z : ℂ, is_root f z :=
 let ⟨z₀, hz₀⟩ := attains_infi f in
 exists.intro z₀ $ by_contradiction $ λ hf0,
 have hfX : f - C (f.eval z₀) ≠ 0,
