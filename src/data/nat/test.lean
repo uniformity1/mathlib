@@ -1,1 +1,1 @@
-example : 2 + 2 = 4 := rfl
+lemma x : 2 + 2 = 4 := rfl
