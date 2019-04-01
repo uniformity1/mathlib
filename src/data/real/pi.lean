@@ -211,17 +211,6 @@ begin
   all_goals {norm_num}
 end
 
-lemma pi_lt_315 : pi < 3.15 :=
-begin
-  refine lt_of_lt_of_le (pi_lt_sqrt_two_add_series 4) _,
-  apply add_le_of_le_sub_right, rw [mul_comm], apply mul_le_of_le_div, apply pow_pos, norm_num,
-  rw [sqrt_le_left, sub_le, show (0:ℝ) = (0:ℕ)/(1:ℕ), by rw [nat.cast_zero, zero_div]],
-  apply sqrt_two_add_series_step_down 140 99,
-  apply sqrt_two_add_series_step_down 279 151,
-  apply sqrt_two_add_series_step_down 51 26,
-  apply sqrt_two_add_series_step_down 412 207,
-  all_goals {norm_num}
-end
 
 /- A computation of the first 7 digits of pi is given here:
   https://gist.github.com/fpvandoorn/5b405988bc2e61953d56e3597db16ecf
