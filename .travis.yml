@@ -56,4 +56,7 @@ jobs:
         - lean --recursive --export=mathlib.txt src/
         - leanchecker mathlib.txt
         - sh scripts/deploy_nightly.sh
-        
+
+notifications:
+  webhooks:
+    - https://leanprover.zulipchat.com/api/v1/external/travis?stream=travis&topic=build-status&api_key=SwF1QzwUWol76dCxsYgwHbI6giN3cxGn
