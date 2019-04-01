@@ -1,10 +1,16 @@
+
 pull_request_rules:
-  - name: automatic merge with strict
+  - name: automatic merge on CI success and label
+  #If a PR has been labelled 'ready to merge', and the CI
+  #test has passed against the most recent master,
+  #the PR will be merged automatically, and the PR branch will be
+  #deleted
     conditions:
+      - status-success=continuous-integration/travis-ci/pr
       - base=master
+      - label=['ready-to-merge']
     actions:
-      merge:
-        method: squash
-        strict: true
-      comment:
-        message: "test"
+      - delete_head_branch
+      - merge:
+          method: squash
+          strict: true
