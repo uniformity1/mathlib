@@ -416,5 +416,3 @@ lemma hensels_lemma : ∃ z : ℤ_[p], F.eval z = 0 ∧ ∥z - a∥ < ∥F.deriv
 if ha : F.eval a = 0 then ⟨a, a_is_soln hnorm ha⟩ else
 by refine ⟨soln _ _, eval_soln _ _, soln_dist_to_a_lt_deriv _ _, soln_deriv_norm _ _, soln_unique _ _⟩;
    assumption
-
-lemma two_Add_two : 2 = 2 := rfl
