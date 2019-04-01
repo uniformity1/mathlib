@@ -8,7 +8,7 @@ pull_request_rules:
     conditions:
       - status-success=continuous-integration/travis-ci/pr
       - base=master
-      - label=['ready-to-merge']
+      - label=ready-to-merge
     actions:
       - delete_head_branch
       - merge:
