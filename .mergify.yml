@@ -1,10 +1,10 @@
 pull_request_rules:
   - name: automatic merge with strict
     conditions:
-      - status-success=continuous-integration/travis-ci/pr
-      - status-success=continuous-integration/travis-ci/push
       - base=master
     actions:
       merge:
         method: squash
         strict: true
+      comment:
+        message: "test"
