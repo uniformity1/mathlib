@@ -13,4 +13,4 @@ pull_request_rules:
       delete_head_branch: {}
       merge:
         method: squash
-        strict: true
+        strict: smart
