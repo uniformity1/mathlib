@@ -228,4 +228,6 @@ end
   This is not included in mathlib, because of slow compilation time.
   -/
 
+lemma aihadkg : pi < 3.15 := pi_lt_315
+
 end real
