@@ -21,4 +21,4 @@ pull_request_rules:
       dismiss_reviews:
         approved: True
       label:
-        remove: ready-to-merge
+        remove: ['ready-to-merge']
