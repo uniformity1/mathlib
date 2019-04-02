@@ -1,16 +1,6 @@
 /- Integers mod 37
 
-  A demonstration of how to use equivalence relations and equivalence classes in Lean.
-
-  We define the "congruent mod 37" relation on integers, prove it is an equivalence
-  relation, define Zmod37 to be the equivalence classes, and put a ring structure on
-  the quotient.
-
--/
--- this import is helpful for some intermediate calculations
-import tactic.ring
-
--- Definition of the equivalence relation
+  A demonstration of how to use eq
 definition cong_mod37 (a b : ℤ) : Prop := ∃ (k : ℤ), k * 37 = b - a
 
 -- Now check it's an equivalence reln!
