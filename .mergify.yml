@@ -1,23 +1,13 @@
-pull_request_rules:
-  - name: automatic merge on CI success and label
-  #If a PR has been labelled 'ready to merge', and the CI
-  #test has passed against the most recent master,
-  #the PR will be merged automatically, and the PR branch will be
-  #deleted
+- name: automatic merge on CI success and review
     conditions:
       - status-success=continuous-integration/travis-ci/pr
+      - "#changes-requested-reviews-by=0"
       - base=master
       - label=ready-to-merge
+      - approved-reviews-by=['avigad','rwbarton','digama0','cipher1024','ChrisHughes24','robertylewis','patrickmassot']
     actions:
       delete_head_branch: {}
       merge:
         method: squash
         strict: smart
-  - name: remove outdated reviews
-    conditions:
-      - base=master
-    actions:
-      dismiss_reviews:
-        approved: True
-      label:
-        remove: ['ready-to-merge']
+        strict_method: merge
