@@ -329,7 +329,7 @@ setoid.symm (cau_seq.equiv_lim newton_cau_seq) _ hε
 
 private lemma soln_deriv_norm : ∥F.derivative.eval soln∥ = ∥F.derivative.eval a∥ :=
 norm_deriv_eq newton_seq_deriv_norm
-
+lemma sklhf : 1=1:=rfl
 private lemma newton_seq_norm_tendsto_zero : tendsto (λ i, ∥F.eval (newton_cau_seq i)∥) at_top (nhds 0) :=
 squeeze_zero (λ _, norm_nonneg _) newton_seq_norm_le bound'_sq
 
