@@ -1,9 +1,6 @@
 # How to install Lean using `elan`
 
-This document explains how to get started with Lean and mathlib.
-
-If you get stuck, please come to [the chat room](https://leanprover.zulipchat.com/) to ask for
-assistance.
+This document explains how to get started with Lean and m
 
 If you'd prefer to watch a short video tutorial, try:
 * [Installation instructions for Windows 10](https://www.youtube.com/watch?v=2f_9Zetekd8)
