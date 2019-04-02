@@ -1,18 +1,8 @@
 # How to install Lean using `elan`
 
-This document explains how to get started with Lean and mathlib.
-
-If you get stuck, please come to [the chat room](https://leanprover.zulipchat.com/) to ask for
-assistance.
 
 If you'd prefer to watch a short video tutorial, try:
-* [Installation instructions for Windows 10](https://www.youtube.com/watch?v=2f_9Zetekd8)
-* [Installation instructions for macOS](https://www.youtube.com/watch?v=k8U6YOK7c0M)
-
-## Preliminaries
-
-We'll need to set up Lean, an editor that knows about Lean, and `mathlib` (the standard library).
-
+* [Installation instructions for Wi
 Rather than installing Lean directly, we'll install a small program called `elan` which
 automatically provides the correct version of Lean on a per-project basis. This is recommended for
 all users.
